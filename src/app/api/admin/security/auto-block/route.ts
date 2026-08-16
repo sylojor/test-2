@@ -1,14 +1,23 @@
 // ============================================
 // Security Auto-Block API — Auto-block IPs detected by proxy.ts
 // Called by proxy.ts when suspicious/critical paths are accessed
+// Protected by INTERNAL_SECURITY_KEY (shared with proxy.ts)
 // POST: Create or update a BlockedIP record (auto-block)
 // ============================================
 
 import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/db"
 
+const INTERNAL_KEY = process.env.INTERNAL_SECURITY_KEY
+
 export async function POST(request: NextRequest) {
   try {
+    // Verify internal caller (proxy.ts)
+    const key = request.headers.get("x-internal-key")
+    if (!INTERNAL_KEY || key !== INTERNAL_KEY) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+    }
+
     const body = await request.json()
     const { ip, reason, path, attemptDetail } = body
 

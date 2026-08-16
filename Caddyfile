@@ -60,7 +60,7 @@ blivoai.com {
     }
     respond @blockParams 404
 
-    reverse_proxy demo-chatbot:3001 {
+    reverse_proxy blivo-app:3001 {
         header_up Host {host}
         header_up X-Real-IP {remote_host}
         header_down -X-Powered-By
@@ -77,31 +77,33 @@ www.blivoai.com {
     redir https://blivoai.com{uri} permanent
 }
 
-support.blivoai.com {
-    encode zstd gzip {
-        minimum_length 256
-    }
-
-    header {
-        Strict-Transport-Security "max-age=63072000; includeSubDomains"
-        X-Content-Type-Options "nosniff"
-        X-Frame-Options "SAMEORIGIN"
-        Referrer-Policy "strict-origin-when-cross-origin"
-        Permissions-Policy "camera=(), microphone=(), geolocation=(), interest-cohort=()"
-        Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://apis.google.com; frame-src https://accounts.google.com; connect-src 'self' https://*.googleapis.com https://*.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: https: blob:;"
-        -Server
-        -X-Powered-By
-    }
-
-    reverse_proxy support-blivo:3002 {
-        header_up Host {host}
-        header_up X-Real-IP {remote_host}
-        header_down -x-powered-by
-        header_down -Server
-        flush_interval -1
-        transport http {
-            keepalive 30s
-            keepalive_idle_conns 100
-        }
-    }
-}
+# NOTE: support.blivoai.com requires the support-blivo service.
+# Uncomment this block when support-blivo is available.
+# support.blivoai.com {
+#     encode zstd gzip {
+#         minimum_length 256
+#     }
+#
+#     header {
+#         Strict-Transport-Security "max-age=63072000; includeSubDomains"
+#         X-Content-Type-Options "nosniff"
+#         X-Frame-Options "SAMEORIGIN"
+#         Referrer-Policy "strict-origin-when-cross-origin"
+#         Permissions-Policy "camera=(), microphone=(), geolocation=(), interest-cohort=()"
+#         Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://apis.google.com; frame-src https://accounts.google.com; connect-src 'self' https://*.googleapis.com https://*.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: https: blob:;"
+#         -Server
+#         -X-Powered-By
+#     }
+#
+#     reverse_proxy blivo-support:3002 {
+#         header_up Host {host}
+#         header_up X-Real-IP {remote_host}
+#         header_down -x-powered-by
+#         header_down -Server
+#         flush_interval -1
+#         transport http {
+#             keepalive 30s
+#             keepalive_idle_conns 100
+#         }
+#     }
+# }

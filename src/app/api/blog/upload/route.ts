@@ -13,7 +13,7 @@ const UPLOAD_DIR = process.env.NODE_ENV === "production"
   ? "/app/data/uploads/blog"
   : path.join(process.cwd(), "data", "uploads", "blog")
 
-const ALLOWED_TYPES = ["image/png", "image/jpeg", "image/gif", "image/webp", "image/svg+xml"]
+const ALLOWED_TYPES = ["image/png", "image/jpeg", "image/gif", "image/webp"]
 const MAX_SIZE = 5 * 1024 * 1024 // 5MB
 
 export async function POST(request: NextRequest) {

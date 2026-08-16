@@ -37,6 +37,18 @@
     ".next/dev/types/**/*.ts"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    ".next",
+    "server-files",
+    "download",
+    "examples",
+    "prisma/seed.ts",
+    "agent-ctx",
+    "auto-deploy-watcher.sh",
+    "deploy.sh",
+    "server.js",
+    "IMPLEMENTATION_PLAN.md",
+    "viktor_content.json",
+    "src/lib/dodo-payments-original.ts"
   ]
 }

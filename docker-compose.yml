@@ -1,63 +1,51 @@
 services:
   db:
     image: postgres:16-alpine
-    container_name: demo-postgres
+    container_name: blivo-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_USER: blivoai
-      POSTGRES_PASSWORD: YOUR_POSTGRES_PASSWORD
-      POSTGRES_DB: blivoai
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER must be set}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}
+      POSTGRES_DB: ${POSTGRES_DB:?POSTGRES_DB must be set}
     volumes:
-      - demo-postgres-data:/var/lib/postgresql/data
+      - postgres-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U blivoai -d blivoai"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-blivoai} -d ${POSTGRES_DB:-blivoai}"]
       interval: 10s
       timeout: 5s
       retries: 5
     networks:
       - internal
+    security_opt:
+      - no-new-privileges:true
 
   app:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: demo-chatbot
+    container_name: blivo-app
     restart: unless-stopped
     depends_on:
       db:
         condition: service_healthy
+    env_file:
+      - .env
     environment:
-      - DATABASE_URL=postgresql://USER:PASSWORD@db:5432/blivoai?schema=public
+      # DATABASE_URL is constructed from POSTGRES_* vars for the db service.
+      # Override in .env if connecting to an external database.
+      - DATABASE_URL=${DATABASE_URL:-postgresql://${POSTGRES_USER:-blivoai}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-blivoai}?schema=public}
       - NODE_ENV=production
-      - JWT_SECRET=${JWT_SECRET:-blivoai-demo-secret-2024-change-in-production}
-      - LLM_PROVIDER=${LLM_PROVIDER:-mock}
-      - LLM_API_KEY=${LLM_API_KEY:-}
-      - LLM_API_URL=${LLM_API_URL:-}
-      - LLM_MODEL_LIGHT=${LLM_MODEL_LIGHT:-}
-      - LLM_MODEL_MEDIUM=${LLM_MODEL_MEDIUM:-}
-      - LLM_MODEL_HEAVY=${LLM_MODEL_HEAVY:-}
-      - NEXT_PUBLIC_SITE_URL=https://blivoai.com
-      - NEXTAUTH_URL=https://blivoai.com
-      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET:-blivoai-demo-secret}
-      - GOOGLE_CLIENT_ID=107821695568-db4p0elttllbol3q5eg3650q4qbukod2.apps.googleusercontent.com
-      - RESEND_API_KEY=YOUR_RESEND_API_KEY
-      - CRON_SECRET=${CRON_SECRET:-blivoai-cron-2024}
-      - DODO_API_KEY=${DODO_API_KEY:-}
-      - DODO_WEBHOOK_SECRET=${DODO_WEBHOOK_SECRET:-}
-      - DODO_API_BASE_URL=${DODO_API_BASE_URL:-https://live.dodopayments.com}
-      - DODO_IS_LIVE=${DODO_IS_LIVE:-true}
-      - NEXT_PUBLIC_GOOGLE_CLIENT_ID=${NEXT_PUBLIC_GOOGLE_CLIENT_ID:-}
-      - GROQ_API_KEY=${GROQ_API_KEY:-}
-      - TOGETHER_API_KEY=${TOGETHER_API_KEY:-}
       - PORT=3001
-    volumes:
-      - demo-uploads:/app/uploads
-      - demo-chatbot-data:/app/data
     ports:
-      - "3001:3001"
+      - "127.0.0.1:3001:3001"
+    volumes:
+      - app-uploads:/app/uploads
+      - app-data:/app/data
     networks:
       - internal
       - proxy
+    security_opt:
+      - no-new-privileges:true
 
   caddy:
     image: caddy:2-alpine
@@ -65,39 +53,42 @@ services:
     restart: unless-stopped
     depends_on:
       - app
-      - support-app
     ports:
       - "80:80"
       - "443:443"
     volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config
     networks:
       - proxy
 
-  support-app:
-    build:
-      context: ./support-blivo
-      dockerfile: Dockerfile
-    container_name: support-blivo
-    restart: unless-stopped
-    depends_on:
-      db:
-        condition: service_healthy
-    environment:
-      - DATABASE_URL=postgresql://USER:PASSWORD@db:5432/blivoai?schema=public
-      - NODE_ENV=production
-      - JWT_SECRET=YOUR_JWT_SECRET
-      - PORT=3002
-    networks:
-      - internal
-      - proxy
+  # support-app requires ./support-blivo directory with its own Dockerfile.
+  # Uncomment this block when support-blivo is available.
+  # support-app:
+  #   build:
+  #     context: ./support-blivo
+  #     dockerfile: Dockerfile
+  #   container_name: blivo-support
+  #   restart: unless-stopped
+  #   depends_on:
+  #     db:
+  #       condition: service_healthy
+  #   env_file:
+  #     - .env
+  #   environment:
+  #     - DATABASE_URL=${DATABASE_URL:-postgresql://${POSTGRES_USER:-blivoai}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-blivoai}?schema=public}
+  #     - NODE_ENV=production
+  #     - JWT_SECRET=${JWT_SECRET:?JWT_SECRET must be set}
+  #     - PORT=3002
+  #   networks:
+  #     - internal
+  #     - proxy
 
 volumes:
-  demo-postgres-data:
-  demo-uploads:
-  demo-chatbot-data:
+  postgres-data:
+  app-uploads:
+  app-data:
   caddy_data:
   caddy_config:
 

@@ -114,7 +114,7 @@ export async function GET(
         status: 200,
         headers: {
           "Content-Type": "application/json",
-          "X-Powered-By": "BlivoAI API v1",
+          "X-Powered-By": "API",
           "X-RateLimit-Remaining": String(rateResult.rpmResult.remaining),
         },
       }

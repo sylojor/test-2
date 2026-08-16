@@ -7,7 +7,16 @@ import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/db"
 import { sendInvoiceEmail, sendSubscriptionExpiringEmail } from "@/lib/email-service"
 
-const CRON_SECRET = process.env.CRON_SECRET || "blivoai-cron-2024"
+const CRON_SECRET = process.env.CRON_SECRET
+
+function requireCronSecret(request: NextRequest): boolean {
+  if (!CRON_SECRET) {
+    console.error("[CRON] CRON_SECRET environment variable is not set — cron endpoint disabled")
+    return false
+  }
+  const { searchParams } = new URL(request.url)
+  return searchParams.get("secret") === CRON_SECRET
+}
 
 function formatDate(date: Date, lang: string): string {
   return date.toLocaleDateString(lang === "ar" ? "ar-SA" : "en-US", {
@@ -19,8 +28,7 @@ function formatDate(date: Date, lang: string): string {
 
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url)
-    if (searchParams.get("secret") !== CRON_SECRET) {
+    if (!requireCronSecret(request)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 

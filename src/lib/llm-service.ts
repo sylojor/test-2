@@ -151,6 +151,48 @@ const PROVIDER_BASE_URLS: Record<string, string> = {
   mock: "",
 }
 
+
+// ============================================
+// SSRF Protection — Validate external URLs
+// Only allow known LLM provider URLs
+// ============================================
+const ALLOWED_LLM_HOSTS = [
+  "api.together.xyz",
+  "api.groq.com",
+  "api.x.ai",
+  "openrouter.ai",
+  "api.openai.com",
+  "api.anthropic.com",
+  "llm.z-ai.dev",
+  "live.dodopayments.com",
+  "sandbox.dodopayments.com",
+]
+
+function validateExternalUrl(url: string): string | null {
+  try {
+    const parsed = new URL(url)
+    // Block private/internal IPs
+    if (parsed.hostname === "localhost" || 
+        parsed.hostname === "127.0.0.1" || 
+        parsed.hostname === "::1" ||
+        parsed.hostname === "0.0.0.0" ||
+        parsed.hostname.startsWith("10.") ||
+        parsed.hostname.startsWith("192.168.") ||
+        parsed.hostname.startsWith("172.") ||
+        parsed.hostname === "metadata.google.internal") {
+      return "Private/internal IP not allowed"
+    }
+    // For LLM API calls, check against allowed hosts
+    const isAllowed = ALLOWED_LLM_HOSTS.some(h => parsed.hostname === h || parsed.hostname.endsWith("." + h))
+    if (!isAllowed) {
+      return `Host not in allowlist: ${parsed.hostname}`
+    }
+    return null
+  } catch {
+    return "Invalid URL"
+  }
+}
+
 // --- بناء الإعدادات من متغيرات البيئة ---
 function getLLMConfig(): LLMConfig {
   // الافتراضي: together — أرخص provider حقيقي

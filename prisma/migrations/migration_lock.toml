@@ -1,1 +1,1 @@
-# Prisma Migrations
+provider = "postgresql"

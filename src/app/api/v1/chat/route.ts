@@ -246,7 +246,7 @@ export async function POST(request: NextRequest) {
         status: 200,
         headers: {
           "Content-Type": "application/json",
-          "X-Powered-By": "BlivoAI API v1",
+          "X-Powered-By": "API",
           "X-RateLimit-Remaining": String(rateResult.rpmResult.remaining),
           "X-RateLimit-Reset": String(Math.ceil(rateResult.rpmResult.resetAt / 1000)),
         },

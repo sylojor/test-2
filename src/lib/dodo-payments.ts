@@ -7,6 +7,7 @@
 //           + company-specific DB config (priority)
 // ============================================
 
+import crypto from "crypto"
 import { db } from "@/lib/db"
 
 // Dodo Payments API configuration
@@ -182,7 +183,6 @@ export function verifyDodoWebhook(
   secret: string,
 ): boolean {
   try {
-    const crypto = require("crypto")
     const expectedSignature = crypto
       .createHmac("sha256", secret)
       .update(payload)
@@ -190,8 +190,8 @@ export function verifyDodoWebhook(
     
     return signature === expectedSignature
   } catch {
-    console.warn("[DODO] Webhook verification skipped - crypto not available")
-    return true
+    console.error("[DODO] Webhook verification failed — crypto error")
+    return false
   }
 }
 

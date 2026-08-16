@@ -1,68 +1,69 @@
 # ============================================
-# Dockerfile — BlivoAI Demo
-# Apple-inspired design, PostgreSQL, Next.js standalone
+# Dockerfile — BlivoAI Production
+# Multi-stage build, non-root runtime, tini PID 1
 # ============================================
 
-FROM node:20-alpine AS base
+FROM node:20-slim AS base
 
 # --- Install stage ---
 FROM base AS deps
-RUN apk add --no-cache libc6-compat openssl
+RUN apt-get update -qq && apt-get install -y --no-install-recommends openssl && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
-
-COPY package.json package-lock.json* bun.lock* ./
+COPY package.json package-lock.json* ./
 COPY prisma ./prisma
-RUN npm install
+RUN npm ci
 
 # --- Build stage ---
 FROM base AS builder
+RUN apt-get update -qq && apt-get install -y --no-install-recommends openssl && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-
-# Generate Prisma Client + build
 RUN npx prisma generate && npx next build
-
-# Copy static + public inside standalone
 RUN cp -r .next/static .next/standalone/.next/ && \
     cp -r public .next/standalone/
 
-# --- Production stage ---
-FROM node:20-alpine AS runner
+# --- Production runtime ---
+FROM node:20-slim AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
-RUN apk add --no-cache openssl git python3 make g++
+RUN apt-get update -qq && apt-get install -y --no-install-recommends openssl tini wget && rm -rf /var/lib/apt/lists/*
 
-# Copy standalone build
-COPY --from=builder /app/.next/standalone ./
+# Non-root user
+RUN groupadd --system --gid 1001 nodejs && \
+    useradd --system --uid 1001 -g nodejs nextjs
 
-# Copy static and public
-COPY --from=builder /app/.next/static ./.next/static
-COPY --from=builder /app/public ./public
+# Copy standalone build output (includes traced node_modules)
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 
-# Copy Prisma (needed at runtime)
-COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
-COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
-COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
-COPY --from=builder /app/node_modules/bcryptjs ./node_modules/bcryptjs
-# Copy all other needed runtime modules
-COPY --from=builder /app/node_modules ./node_modules
+# Copy full node_modules from builder for Prisma CLI + app runtime deps
+# (standalone output only traces ~13 packages; app needs bcryptjs, jsonwebtoken, etc.)
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules ./node_modules
+
+# Copy Prisma schema + migrations
+COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
 
 # Copy entrypoint
 COPY --from=builder /app/docker-entrypoint.sh ./docker-entrypoint.sh
-RUN chmod +x ./docker-entrypoint.sh
+RUN chmod +x ./docker-entrypoint.sh && chown nextjs:nodejs ./docker-entrypoint.sh
 
-# Create storage directories
-RUN mkdir -p /app/data /app/data/uploads /app/data/branding /app/uploads
+# Storage directories
+RUN mkdir -p /app/data /app/data/uploads /app/data/branding /app/uploads && \
+    chown -R nextjs:nodejs /app/data /app/uploads
 
-EXPOSE 3000
-ENV PORT=3000
+USER nextjs
+
+EXPOSE 3001
+ENV PORT=3001
 ENV HOSTNAME="0.0.0.0"
 
-# PORT can be overridden by env var (e.g. PORT=3001 for demo)
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+  CMD wget -qO- http://localhost:${PORT:-3001}/ || exit 1
 
-ENTRYPOINT ["./docker-entrypoint.sh"]
+ENTRYPOINT ["tini", "--"]
+CMD ["./docker-entrypoint.sh"]

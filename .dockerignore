@@ -16,3 +16,6 @@ worklog.md
 mini-services/
 examples/
 README.md
+.env
+.env.*
+.env.test

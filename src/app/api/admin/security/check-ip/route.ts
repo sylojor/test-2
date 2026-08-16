@@ -1,13 +1,21 @@
 // ============================================
 // Security Check-IP API — Used by proxy.ts to check if IP is blocked
+// Protected by INTERNAL_SECURITY_KEY (shared with proxy.ts)
 // Returns: { blocked: boolean, reason?: string }
 // ============================================
 
 import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/db"
 
+const INTERNAL_KEY = process.env.INTERNAL_SECURITY_KEY
+
 export async function GET(request: NextRequest) {
   try {
+    // Verify internal caller (proxy.ts)
+    const key = request.headers.get("x-internal-key")
+    if (!INTERNAL_KEY || key !== INTERNAL_KEY) {
+      return NextResponse.json({ blocked: false })
+    }
     const url = new URL(request.url)
     const ip = url.searchParams.get("ip") || "unknown"
 

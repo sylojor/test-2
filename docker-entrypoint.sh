@@ -1,39 +1,44 @@
 #!/bin/sh
+# Production entrypoint — failures are fatal
 set -e
 
-echo "BlivoAI — Starting..."
+echo "[entrypoint] BlivoAI starting..."
 
-# --- 1. Generate Prisma Client ---
-echo "Generating Prisma Client..."
-node /app/node_modules/prisma/build/index.js generate || {
-  echo "Prisma generate failed, trying db push directly..."
-}
+# --- 1. Generate Prisma Client (from pre-copied schema) ---
+echo "[entrypoint] Generating Prisma Client..."
+node /app/node_modules/prisma/build/index.js generate
 
-# --- 2. Sync database schema ---
-echo "Syncing database schema..."
-node /app/node_modules/prisma/build/index.js db push --accept-data-loss 2>/dev/null || {
-  echo "Warning: db push failed — database may already be set up"
-}
+# --- 2. Apply database migrations (fatal on failure) ---
+echo "[entrypoint] Applying database migrations..."
+node /app/node_modules/prisma/build/index.js migrate deploy
 
-# --- 3. Seed admin user ---
-echo "Creating admin user..."
-node /app/node_modules/prisma/build/index.js db seed 2>/dev/null || {
-  echo "Warning: seed failed — admin may already exist"
-}
+echo "[entrypoint] Migrations applied successfully."
 
-# --- 4. Create data directories ---
+# --- 3. Create data directories ---
 mkdir -p /app/data /app/data/uploads /app/data/branding /app/uploads /app/public/uploads
 
-# --- 5. Start server ---
-echo "Ready! Starting production server..."
-exec node server.js &
+# --- 4. Start server in background ---
+echo "[entrypoint] Starting production server on port ${PORT:-3001}..."
+node server.js &
+SERVER_PID=$!
 
-# --- 6. Start invoice reminder cron (every hour) ---
-CRON_SECRET=${CRON_SECRET:-blivoai-cron-2024}
-echo "Starting invoice reminder cron (every hour)..."
-while true; do
-  sleep 3600
-  wget -qO- "http://localhost:${PORT:-3000}/api/cron/invoice-reminders?secret=$CRON_SECRET" > /dev/null 2>&1 || true
-done &
+# --- 5. Start invoice reminder cron (if CRON_SECRET is set) ---
+if [ -n "$CRON_SECRET" ]; then
+  echo "[entrypoint] Invoice reminder cron enabled (interval: 60 min)."
+  while true; do
+    sleep 3600
+    wget -qO- "http://localhost:${PORT:-3001}/api/cron/invoice-reminders?secret=$CRON_SECRET" > /dev/null 2>&1 || true
+  done &
+  CRON_PID=$!
+else
+  echo "[entrypoint] CRON_SECRET not set — invoice reminder cron disabled."
+  CRON_PID=
+fi
 
-wait
+# --- 6. Wait for server process ---
+echo "[entrypoint] Server started (PID $SERVER_PID). Waiting..."
+wait $SERVER_PID
+EXIT_CODE=$?
+
+echo "[entrypoint] Server exited with code $EXIT_CODE. Container will stop."
+exit $EXIT_CODE

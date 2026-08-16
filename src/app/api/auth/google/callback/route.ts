@@ -79,7 +79,7 @@ export async function GET(request: NextRequest) {
     if (!user) {
       const randomPassword = await hashPassword(Math.random().toString(36).slice(2) + Date.now().toString(36))
       user = await db.user.create({
-        data: { email, name, password: randomPassword, role: "OWNER" },
+        data: { email, name, password: randomPassword, role: "VIEWER" },
       })
       isNewUser = true
     }

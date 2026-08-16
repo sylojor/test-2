@@ -1,14 +1,23 @@
 // ============================================
 // Security Log API — Log suspicious requests
 // Called by proxy.ts when it detects suspicious activity
+// Protected by INTERNAL_SECURITY_KEY (shared with proxy.ts)
 // POST: Create a security log entry
 // ============================================
 
 import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/db"
 
+const INTERNAL_KEY = process.env.INTERNAL_SECURITY_KEY
+
 export async function POST(request: NextRequest) {
   try {
+    // Verify internal caller (proxy.ts)
+    const key = request.headers.get("x-internal-key")
+    if (!INTERNAL_KEY || key !== INTERNAL_KEY) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+    }
+
     const body = await request.json()
     const { ip, path, method, statusCode, userAgent, referer, isSuspicious, reason, blocked } = body
 

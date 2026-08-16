@@ -14,10 +14,18 @@
 //
 // NOTE: Full JWT verification is done in API routes via requireAdmin().
 // The proxy only checks for cookie presence as a lightweight gate.
+//
+// Security endpoints use INTERNAL_SECURITY_KEY env var for auth.
 // ============================================
 
 import { NextRequest, NextResponse } from "next/server"
 import { i18n } from "@/lib/i18n-config"
+
+// Internal security key for proxy -> security API calls
+const INTERNAL_KEY = process.env.INTERNAL_SECURITY_KEY
+const securityHeaders: Record<string, string> = INTERNAL_KEY
+  ? { "Content-Type": "application/json", "x-internal-key": INTERNAL_KEY }
+  : { "Content-Type": "application/json" }
 
 // ============================================
 // Suspicious path patterns — auto-block scanners
@@ -388,7 +396,7 @@ export function proxy(request: NextRequest) {
       try {
         fetch(new URL("/api/admin/security/auto-block", request.url), {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: securityHeaders,
           body: JSON.stringify({
             ip,
             reason: isCritical
@@ -413,7 +421,7 @@ export function proxy(request: NextRequest) {
     try {
       fetch(new URL("/api/admin/security/log", request.url), {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: securityHeaders,
         body: JSON.stringify({
           ip,
           path: pathname,
@@ -494,7 +502,7 @@ export function proxy(request: NextRequest) {
     try {
       fetch(new URL("/api/admin/security/auto-block", request.url), {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: securityHeaders,
         body: JSON.stringify({
           ip,
           reason: `حظر تلقائي: وصول لملف سيرفر خطير (${pathname})`,
