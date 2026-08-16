@@ -1,0 +1,107 @@
+# ============================================
+# Caddyfile - BlivoAI Server  
+# ============================================
+
+demo.blivoai.com {
+    @robots path /robots.txt
+    respond @robots `User-Agent: *
+Disallow: /
+` 200
+
+    @notrobots not path /robots.txt
+    header @notrobots Location "https://blivoai.com{uri}"
+    header @notrobots X-Robots-Tag "noindex, nofollow"
+    respond @notrobots "" 301
+}
+
+blivoai.com {
+    @dangerous {
+        path /.env /.env.* /.git
+    }
+    respond @dangerous 403
+
+    encode zstd gzip {
+        minimum_length 256
+    }
+
+    @nextstatic path /_next/static/*
+    header @nextstatic Cache-Control "public, max-age=31536000, immutable"
+
+    @favicon path /favicon* /apple-touch-icon* /icon-* /logo.* /og-image*
+    header @favicon Cache-Control "public, max-age=604800"
+
+    @sitemap path /sitemap.xml /robots.txt
+    header @sitemap Cache-Control "public, max-age=3600"
+
+    @manifest path /manifest.json
+    header @manifest Cache-Control "public, max-age=3600"
+
+    header {
+        Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "SAMEORIGIN"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        Permissions-Policy "camera=(), microphone=(), geolocation=(), interest-cohort=()"
+        Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://apis.google.com; frame-src https://accounts.google.com; connect-src 'self' https://*.googleapis.com https://*.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: https: blob:;"
+        -Server
+        -X-Powered-By
+    }
+
+    # Prevent caching of HTML pages
+    @notstatic not path /_next/static/* /favicon* /apple-touch-icon* /icon-* /logo.* /og-image* /manifest.json
+    header @notstatic Cache-Control "no-cache, no-store, must-revalidate"
+    header @notstatic Pragma "no-cache"
+    header @notstatic Expires "0"
+
+    # Block problematic query param URLs that Google indexed
+    @blockParams {
+        query q=*
+        query upgrade=*
+    }
+    respond @blockParams 404
+
+    reverse_proxy demo-chatbot:3001 {
+        header_up Host {host}
+        header_up X-Real-IP {remote_host}
+        header_down -X-Powered-By
+        header_down -Server
+        flush_interval -1
+        transport http {
+            keepalive 30s
+            keepalive_idle_conns 100
+        }
+    }
+}
+
+www.blivoai.com {
+    redir https://blivoai.com{uri} permanent
+}
+
+support.blivoai.com {
+    encode zstd gzip {
+        minimum_length 256
+    }
+
+    header {
+        Strict-Transport-Security "max-age=63072000; includeSubDomains"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "SAMEORIGIN"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        Permissions-Policy "camera=(), microphone=(), geolocation=(), interest-cohort=()"
+        Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://apis.google.com; frame-src https://accounts.google.com; connect-src 'self' https://*.googleapis.com https://*.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: https: blob:;"
+        -Server
+        -X-Powered-By
+    }
+
+    reverse_proxy support-blivo:3002 {
+        header_up Host {host}
+        header_up X-Real-IP {remote_host}
+        header_down -x-powered-by
+        header_down -Server
+        flush_interval -1
+        transport http {
+            keepalive 30s
+            keepalive_idle_conns 100
+        }
+    }
+}
