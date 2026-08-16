@@ -1,5 +1,5 @@
 #!/bin/sh
-# set -e  # disabled for production resilience
+# # set -e  # disabled for production resilience
 
 echo "BlivoAI — Starting..."
 
