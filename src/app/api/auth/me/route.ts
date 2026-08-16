@@ -47,7 +47,6 @@ export async function GET(request: NextRequest) {
         role: user.role,
         companyId: user.companyId,
         emailVerified: user.emailVerified ?? true,
-        trialStartAt: user.trialStartAt,
       },
       company: user.ownedCompany
         ? {

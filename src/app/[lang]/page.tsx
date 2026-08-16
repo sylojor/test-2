@@ -60,15 +60,15 @@ interface AppState {
   departments: IDepartment[]
   projects: IProject[]
   pendingDecisions: number
-  featureRef: string | null
-  pendingEmail: string | null  // email awaiting verification
+  featureRef?: string | null
+  pendingEmail?: string | null  // email awaiting verification
 }
 
 export default function Home({ params }: { params: Promise<{ lang: string }> }) {
   const { lang: langStr } = use(params)
   const lang = langStr as Locale
   
-  const { activeTab, setActiveTab, setSelectedEmployee, setSelectedDepartment, setSelectedProject, setSelectedEmployeeDetail, hydrate } = useDashboardStore()
+  const { activeTab, setActiveTab, setSelectedEmployee, setSelectedDepartment, setSelectedProject, setSelectedEmployeeDetail, hydrate } = (useDashboardStore() as any)
   const router = useRouter()
   
   // --- استعادة حالة الـ Dashboard من localStorage + URL hash بعد التحميل ---
@@ -391,13 +391,13 @@ export default function Home({ params }: { params: Promise<{ lang: string }> }) 
   }
 
   // Handle verification success
-  const handleVerified = (user: { id: string; name: string; email: string; role: string }) => {
+  const handleVerified = (data: { user: { id: string; name: string; email: string; role: string } }) => {
     setAppState(prev => ({
       ...prev,
       phase: "company-setup",
-      userId: user.id,
-      userName: user.name,
-      userRole: user.role,
+      userId: data.user.id,
+      userName: data.user.name,
+      userRole: data.user.role,
       pendingEmail: null,
     }))
     toast.success(lang === "ar" ? "تم تفعيل حسابك! سجّل شركتك لتبدأ" : "Account verified! Create your company to get started")

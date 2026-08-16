@@ -39,13 +39,15 @@ export async function GET(
           orderBy: { createdAt: "desc" },
           take: 10,
         },
-        conversations: {
-          orderBy: { updatedAt: "desc" },
-          take: 5,
+        conversationParticipants: {
           include: {
-            messages: {
-              orderBy: { createdAt: "desc" },
-              take: 1,
+            conversation: {
+              include: {
+                messages: {
+                  orderBy: { createdAt: "desc" },
+                  take: 1,
+                },
+              },
             },
           },
         },

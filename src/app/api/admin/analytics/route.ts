@@ -114,8 +114,8 @@ export async function GET(request: NextRequest) {
     let sitemapUrlCount = 0
     try {
       const [sitemapRes, robotsRes] = await Promise.all([
-        fetch("http://localhost:3001/sitemap.xml", { cache: "no-store" }),
-        fetch("http://localhost:3001/robots.txt", { cache: "no-store" }),
+        fetch((process.env.NEXT_PUBLIC_APP_URL || "https://blivoai.com") + "/sitemap.xml", { cache: "no-store" }),
+        fetch((process.env.NEXT_PUBLIC_APP_URL || "https://blivoai.com") + "/robots.txt", { cache: "no-store" }),
       ])
       sitemapSubmitted = sitemapRes.ok
       robotsTxt = robotsRes.ok

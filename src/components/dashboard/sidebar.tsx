@@ -57,6 +57,8 @@ interface SidebarProps {
   onCreateEmployee: () => void
   onCreateDepartment: () => void
   onCreateProject: () => void
+  onLogout?: () => void;
+  onEmployeeDetail?: (id: string) => void
   /** Mobile only: controls Sheet open state */
   mobileOpen?: boolean
   onMobileOpenChange?: (open: boolean) => void

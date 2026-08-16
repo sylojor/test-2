@@ -47,7 +47,6 @@ export async function POST(request: NextRequest) {
         emailVerified: true,
         verificationCode: null,
         verificationExpiry: null,
-        trialStartAt: new Date(), // Start trial on verification
       },
     })
 

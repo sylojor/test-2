@@ -20,7 +20,7 @@ async function exchangeCodeForToken(code: string): Promise<any> {
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({
       code,
-      client_id: clientId,
+      client_id: process.env.GOOGLE_CLIENT_ID!,
       client_secret: clientSecret,
       redirect_uri: redirectUri,
       grant_type: "authorization_code",
@@ -91,7 +91,7 @@ export async function GET(request: NextRequest) {
       companyId: user.companyId || undefined,
     })
 
-    let company = null
+    let company: any = null
     let employees: any[] = []
     let departments: any[] = []
 

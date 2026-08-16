@@ -28,7 +28,6 @@ export async function GET() {
       logoUrl: settings.logoUrl,
       faviconUrl: settings.faviconUrl,
       primaryColor: settings.primaryColor,
-      showTestPayment: settings.showTestPayment ?? false,
     })
   } catch (error) {
     console.error("[GET_PLATFORM_SETTINGS_ERROR]", error)
@@ -45,12 +44,11 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { platformName, logoUrl, faviconUrl, primaryColor, showTestPayment } = body as {
+    const { platformName, logoUrl, faviconUrl, primaryColor } = body as {
       platformName?: string
       logoUrl?: string | null
       faviconUrl?: string | null
       primaryColor?: string
-      showTestPayment?: boolean
     }
 
     const allowedColors = ["emerald", "teal", "green", "cyan", "amber", "orange", "red", "rose", "purple", "violet", "indigo", "blue", "sky", "slate", "gray", "zinc", "neutral", "stone"]
@@ -72,7 +70,6 @@ export async function PUT(request: NextRequest) {
           ...(logoUrl !== undefined && { logoUrl }),
           ...(faviconUrl !== undefined && { faviconUrl }),
           ...(primaryColor && { primaryColor }),
-      ...(showTestPayment !== undefined && { showTestPayment }),
         },
       })
     } else {
@@ -82,8 +79,7 @@ export async function PUT(request: NextRequest) {
           logoUrl: logoUrl ?? null,
           faviconUrl: faviconUrl ?? null,
           primaryColor: primaryColor || "teal",
-          showTestPayment: showTestPayment ?? false,
-        },
+                  },
       })
     }
 

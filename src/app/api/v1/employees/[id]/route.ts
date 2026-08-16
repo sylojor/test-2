@@ -70,7 +70,7 @@ export async function GET(
         // Stats
         _count: {
           select: {
-            conversations: true,
+            conversationParticipants: true,
             tokenUsages: true,
             decisions: true,
             tasks: true,

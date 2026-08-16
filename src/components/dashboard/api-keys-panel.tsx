@@ -78,7 +78,7 @@ interface CreateKeyResponse {
 // ============================================
 
 export function ApiKeysPanel() {
-  const { activeCompanyId, subscription } = useDashboardStore()
+  const { activeCompanyId, subscription } = (useDashboardStore() as any)
   const [keys, setKeys] = useState<ApiKeyInfo[]>([])
   const [loading, setLoading] = useState(true)
   const [creating, setCreating] = useState(false)

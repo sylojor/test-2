@@ -219,9 +219,9 @@ const LABELS = {
   dbReset: { en: "Reset Database", ar: "حذف البيانات" },
   execute: { en: "Execute", ar: "تنفيذ" },
   running: { en: "Running...", ar: "جاري..." },
-  users: { en: "Users", ar: "المستخدمين" },
-  conversations: { en: "Conversations", ar: "محادثات" },
-  messages: { en: "Messages", ar: "رسائل" },
+  dbUsers: { en: "Users", ar: "المستخدمين" },
+  dbConversations: { en: "Conversations", ar: "محادثات" },
+  dbMessages: { en: "Messages", ar: "رسائل" },
   tokensUsed: { en: "Tokens Used", ar: "التوكنات المستخدمة" },
   docker: { en: "Docker", ar: "Docker" },
   nodeEnv: { en: "Node Env", ar: "بيئة Node" },
@@ -2936,10 +2936,10 @@ function SystemTab({ lang }: { lang: "ar" | "en" }) {
         <CardContent>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {[
-              { label: t("users", lang), value: settings.database?.userCount ?? 0 },
+              { label: t("dbUsers", lang), value: settings.database?.userCount ?? 0 },
               { label: t("companiesCount", lang), value: settings.database?.companyCount ?? 0 },
-              { label: t("conversations", lang), value: settings.database?.conversationCount ?? 0 },
-              { label: t("messages", lang), value: settings.database?.messageCount ?? 0 },
+              { label: t("dbConversations", lang), value: settings.database?.conversationCount ?? 0 },
+              { label: t("dbMessages", lang), value: settings.database?.messageCount ?? 0 },
               { label: t("employees", lang), value: settings.database?.employeeCount ?? 0 },
               { label: t("departments", lang), value: settings.database?.departmentCount ?? 0 },
               { label: t("projects", lang), value: settings.database?.projectCount ?? 0 },

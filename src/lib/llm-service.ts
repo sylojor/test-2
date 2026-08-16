@@ -35,6 +35,8 @@
 // ============================================
 
 import type { ModelTier, LLMMessage, LLMRequest, LLMResponse, RequestType, LLMProvider } from "@/types"
+
+type ToolCallResult = { tool_call_id: string; name: string; arguments: string }
 import {
   selectModelTier,
   getCachedResponse,
@@ -301,7 +303,7 @@ export async function sendToLLM(
   }
 
   // 4. تلخيص المحادثة لو طويلة
-  const optimizedMessages = buildConversationContext(request.messages)
+  const optimizedMessages = buildConversationContext(request.messages) as LLMMessage[]
 
   // 5. إرسال للموديل
   let response: LLMResponse
@@ -1084,17 +1086,17 @@ export async function sendToLLMWithTools(
   }
 
   // Build conversation context
-  const optimizedMessages = buildConversationContext(request.messages)
+  const optimizedMessages = buildConversationContext(request.messages) as LLMMessage[]
 
   // Track all tool calls made
   const toolCallLog: Array<{
     name: string
     arguments: Record<string, unknown>
-    result: ToolCallResult
+    result: any
   }> = []
 
   // Extended messages list (will grow as tool calls are made)
-  const extendedMessages: ExtendedLLMMessage[] = [...optimizedMessages]
+  const extendedMessages: any[] = [...optimizedMessages]
 
   let totalTokensIn = 0
   let totalTokensOut = 0
@@ -1535,7 +1537,7 @@ async function callLLMWithTools(
       }
       // Regular message
       return {
-        role: m.role,
+        role: m.role as "system" | "user" | "assistant",
         content: m.content || "",
       }
     }),
@@ -1577,7 +1579,7 @@ async function callLLMWithTools(
       body: JSON.stringify({
         model,
         messages: messages.filter(m => m.role !== "tool" && !("tool_calls" in m)).map(m => ({
-          role: m.role,
+          role: m.role as "system" | "user" | "assistant",
           content: m.content || "",
         })),
         max_tokens: 2048,

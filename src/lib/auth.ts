@@ -93,6 +93,7 @@ export interface JWTPayload {
   email: string
   role: string
   companyId?: string
+  ownedCompany?: { id: string; name: string }
 }
 
 export function generateToken(payload: JWTPayload): string {

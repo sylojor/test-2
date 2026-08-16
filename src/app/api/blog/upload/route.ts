@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
 
     // Generate unique filename
     const ext = path.extname(file.name) || ".png"
-    const filename = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}${ext}`
+    const filename = `${crypto.randomUUID()}${ext}`
     const filePath = path.join(UPLOAD_DIR, filename)
 
     // Write file

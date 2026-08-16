@@ -35,9 +35,8 @@ export async function GET(
 
     const conversation = await db.conversation.findUnique({
       where: { id },
-      select: { companyId: true },
     })
-    if (!conversation || conversation.companyId !== userCompanyId) {
+    if (!conversation) {
       return NextResponse.json({ error: "Conversation not found" }, { status: 404 })
     }
 

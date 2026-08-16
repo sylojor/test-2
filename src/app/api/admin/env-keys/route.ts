@@ -16,6 +16,8 @@ import { requireAdmin } from "@/lib/auth"
 import { readFileSync, writeFileSync, existsSync } from "fs"
 import { resolve } from "path"
 
+function findEnvFile(): string { return "/app/.env" }
+
 // Whitelisted keys that can be managed via this API
 const ALLOWED_KEYS: Record<string, {
   label: string

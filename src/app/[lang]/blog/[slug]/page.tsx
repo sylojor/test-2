@@ -19,7 +19,7 @@ export async function generateStaticParams() {
       where: { status: "PUBLISHED" },
       select: { slug: true },
     })
-    const params = []
+    const params: any[] = []
     for (const locale of i18n.locales) {
       for (const post of posts) {
         params.push({ lang: locale, slug: post.slug })
@@ -39,7 +39,7 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
   let description: string
   let ogTitle: string
   let ogDescription: string
-  let post: { publishedAt?: Date | null; updatedAt?: Date | null; coverImage?: string | null } | null = null
+  let post: any = null
 
   try {
     post = await db.blogPost.findUnique({
@@ -49,7 +49,7 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
         metaTitleAr: true, metaTitleEn: true, metaDescAr: true, metaDescEn: true,
         coverImage: true, publishedAt: true, updatedAt: true,
       },
-    })
+    }) as any
 
     if (post) {
       title = isAr

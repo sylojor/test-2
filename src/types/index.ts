@@ -79,6 +79,7 @@ export type IntegrationPlatform =
   | "GOOGLE"
   | "TIKTOK"
   | "OTHER"
+  | "SSH"
 
 // --- نبرة التواصل ---
 export type Tone = 
@@ -167,6 +168,7 @@ export interface ICompany {
   description?: string
   industry?: string
   tone: Tone
+  dialect: Dialect
   logoUrl?: string
   ownerId: string
   subscription: SubscriptionPlan
@@ -546,9 +548,13 @@ export interface DashboardState {
   sidebarOpen: boolean
   activeTab: DashboardTab
   hydrated: boolean
+  selectedEmployeeDetailId: string | null
+  activeCompanyId: string | null
+  subscription: SubscriptionPlan | null
   setSelectedEmployee: (id: string | null) => void
   setSelectedDepartment: (id: string | null) => void
   setSelectedProject: (id: string | null) => void
+  setSelectedEmployeeDetail: (id: string | null) => void
   setSidebarOpen: (open: boolean) => void
   setActiveTab: (tab: DashboardTab, skipUrlUpdate?: boolean) => void
   hydrate: () => void
@@ -690,6 +696,29 @@ export interface CreateWorkOrderRequest {
 }
 
 // ============================================
+// Blog Types
+// ============================================
+
+export interface BlogPostType {
+  id: string
+  slug: string
+  title: string
+  titleAr: string
+  titleEn: string
+  metaTitleAr: string
+  metaTitleEn: string
+  metaDescAr: string
+  metaDescEn: string
+  excerptAr: string
+  excerptEn: string
+  coverImage: string
+  content: string
+  publishedAt: string | Date
+  createdAt: string | Date
+  updatedAt: string | Date
+}
+
+// ============================================
 // LLM Service Types
 // ============================================
 
@@ -713,4 +742,17 @@ export interface LLMResponse {
   modelTier: ModelTier
   cached: boolean
   estimatedCost: number
+}
+
+export interface LLMToolResponse {
+  reply: string
+  conversationId: string
+  tokensIn: number
+  tokensOut: number
+  totalTokens: number
+  modelTier: ModelTier
+  cached: boolean
+  estimatedCost: number
+  decision?: any
+  tokensUsed?: any
 }

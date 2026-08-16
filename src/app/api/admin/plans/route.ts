@@ -1,3 +1,4 @@
+import { SubscriptionPlan } from "@/types"
 // ============================================
 // API: إدارة الخطط (صاحب المنصة) — Admin only
 // GET  — جلب كل الخطط
@@ -160,14 +161,14 @@ export async function PATCH(request: NextRequest) {
     // حدّث الشركات اللي على هالخطة
     if (data.tokenBudget !== undefined) {
       await db.company.updateMany({
-        where: { subscription: plan.planKey },
+        where: { subscription: plan.planKey as SubscriptionPlan },
         data: { tokenBudgetMonthly: data.tokenBudget },
       })
     }
 
     if (data.maxDepartments !== undefined) {
       await db.company.updateMany({
-        where: { subscription: plan.planKey },
+        where: { subscription: plan.planKey as SubscriptionPlan },
         data: { maxDepartments: data.maxDepartments },
       })
     }
@@ -206,7 +207,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     const companiesOnPlan = await db.company.count({
-      where: { subscription: plan.planKey },
+      where: { subscription: plan.planKey as SubscriptionPlan },
     })
 
     if (companiesOnPlan > 0) {
@@ -281,7 +282,7 @@ async function seedDefaultPlans() {
     },
   ]
 
-  const created = []
+  const created: any[] = []
   for (const plan of defaults) {
     const p = await db.planConfig.create({
       data: {

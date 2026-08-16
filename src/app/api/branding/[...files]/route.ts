@@ -76,7 +76,7 @@ function getCachedFile(dir: string, filename: string): { buffer: Buffer; mime: s
 function serveStatic(dir: string, filename: string): NextResponse | null {
   const result = getCachedFile(dir, filename)
   if (!result) return null
-  return new NextResponse(result.buffer, {
+  return new NextResponse(new Uint8Array(result.buffer), {
     status: 200,
     headers: {
       "Content-Type": result.mime,
@@ -161,7 +161,7 @@ export async function GET(
 
   if (filename in DYNAMIC_SIZES) {
     const buffer = await resizeSource(DYNAMIC_SIZES[filename]!)
-    if (buffer) return new NextResponse(buffer, {
+    if (buffer) return new NextResponse(new Uint8Array(buffer), {
       status: 200,
       headers: { "Content-Type": "image/png", "Cache-Control": "public, max-age=86400, must-revalidate", "X-Content-Type-Options": "nosniff" },
     })
@@ -169,7 +169,7 @@ export async function GET(
 
   if (filename === "favicon.ico") {
     const buffer = await resizeSource(32)
-    if (buffer) return new NextResponse(buffer, {
+    if (buffer) return new NextResponse(new Uint8Array(buffer), {
       status: 200,
       headers: { "Content-Type": "image/x-icon", "Cache-Control": "public, max-age=86400, must-revalidate", "X-Content-Type-Options": "nosniff" },
     })

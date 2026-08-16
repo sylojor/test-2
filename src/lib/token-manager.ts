@@ -495,6 +495,9 @@ export async function updateSubscription(
   plan: SubscriptionPlan,
 ): Promise<TokenBudgetInfo> {
   const planInfo = await getPlanFromDB(plan)
+  if (!planInfo) {
+    throw new Error(`Plan not found: ${plan}`)
+  }
   
   await db.company.update({
     where: { id: companyId },

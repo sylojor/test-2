@@ -103,7 +103,7 @@ export async function POST(request: NextRequest) {
     })
 
     // --- جلب بيانات الشركة إذا موجودة ---
-    let company = null
+    let company: any = null
     let employees: any[] = []
     let departments: any[] = []
 
