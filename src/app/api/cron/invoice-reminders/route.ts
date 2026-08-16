@@ -32,12 +32,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const now = new Date()
+    const nowDate = new Date()
     const results = { sent48h: 0, sent24h: 0, sentExpired: 0, errors: [] as string[] }
 
     // 48 ساعة قبل الاستحقاق
-    const h48 = new Date(now.getTime() + 48 * 60 * 60 * 1000)
-    const h47 = new Date(now.getTime() + 47 * 60 * 60 * 1000)
+    const h48 = new Date(nowDate.getTime() + 48 * 60 * 60 * 1000)
+    const h47 = new Date(nowDate.getTime() + 47 * 60 * 60 * 1000)
     const invoices48h = await db.invoice.findMany({
       where: { status: "PENDING", reminder48hSent: false, dueDate: { gte: h47, lte: h48 } },
       include: { user: true, company: true },
@@ -59,8 +59,8 @@ export async function GET(request: NextRequest) {
     }
 
     // 24 ساعة قبل الاستحقاق
-    const h24 = new Date(now.getTime() + 24 * 60 * 60 * 1000)
-    const h23 = new Date(now.getTime() + 23 * 60 * 60 * 1000)
+    const h24 = new Date(nowDate.getTime() + 24 * 60 * 60 * 1000)
+    const h23 = new Date(nowDate.getTime() + 23 * 60 * 60 * 1000)
     const invoices24h = await db.invoice.findMany({
       where: { status: "PENDING", reminder24hSent: false, dueDate: { gte: h23, lte: h24 } },
       include: { user: true, company: true },
@@ -83,7 +83,7 @@ export async function GET(request: NextRequest) {
 
     // فواتير منتهية
     const expired = await db.invoice.findMany({
-      where: { status: "PENDING", reminderExpiredSent: false, dueDate: { lt: now } },
+      where: { status: "PENDING", reminderExpiredSent: false, dueDate: { lt: nowDate } },
     })
     for (const inv of expired) {
       await db.invoice.update({ where: { id: inv.id }, data: { status: "OVERDUE", reminderExpiredSent: true } })

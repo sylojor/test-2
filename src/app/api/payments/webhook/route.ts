@@ -50,11 +50,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Health check — GET returns 200 so Dodo knows the endpoint exists
+// GET is not supported on webhook endpoint — POST only
 export async function GET() {
-  return NextResponse.json({
-    status: "active",
-    message: "Dodo Payments webhook endpoint is ready",
-    timestamp: new Date().toISOString(),
-  })
+  return NextResponse.json({ error: "Method not allowed" }, { status: 405 })
 }
