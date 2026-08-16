@@ -1,0 +1,47 @@
+[
+  {
+    "url": "https://www.hetzner.com/cloud/regular-performance",
+    "name": "Hetzner Virtual Private Server: Best Price-Performance Ratio",
+    "snippet": "Virtual private server hosting – with best price-performance ratio. from € 3.28 SSL. Low to medium CPU usage. Global availability. European data security. 2026 ... Missing: CX42 current",
+    "host_name": "www.hetzner.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.vpsbenchmarks.com/hosters/hetzner/plans/cx32",
+    "name": "CX32 - VPSBenchmarks",
+    "snippet": "Between $1.75 and $2.33 Approximate RAM per vCPU 2.0GB Hourly billing. Price per month 6.30€ ($7.37) 80 Num Cores 4 Memory GB 8 Virtualization Missing: current euros",
+    "host_name": "www.vpsbenchmarks.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://vpsfor.dev/posts/hetzner-cx32-pricing-2026",
+    "name": "Hetzner Cloud CX32 Pricing 2026: Cost, Specs, and Who Should Use It",
+    "snippet": "Hetzner Cloud CX32 costs ~€8.30/month for 4 vCPU and 8GB RAM. you get 4 shared AMD EPYC vCPUs, 8GB RAM, 80GB NVMe storage, and 20TB of traffic. ... Missing: euros | Show results with: euros",
+    "host_name": "vpsfor.dev",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://host-c.com/vs-hetzner.html",
+    "name": "Host-C vs Hetzner Cloud — VPS Comparison 2026",
+    "snippet": "Hetzner CX32 Monthly Price €12.30/mo €7.54/mo. Effective Price (with IPv4) 2 4 vCPU AMD/Intel RAM 8 GB DDR4 8 GB Storage. Lower price per vCPU ...",
+    "host_name": "host-c.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.hetzner.com/pressroom/new-cx-plans",
+    "name": "Hetzner introduces new shared vCPU cloud servers",
+    "snippet": "Following that is the CX42 with 8 vCPUs, 16 GB of RAM, and 160 GB of disk space for € 16.40 a month (€ 0.0273 per hour). To maximize performance ... Missing: current | Show results with: current",
+    "host_name": "www.hetzner.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  }
+]

@@ -1,0 +1,1415 @@
+// ============================================
+// One Employer Company — Database Schema
+// المنصة الأولى لتوظيف موظفين اصطناعيين أذكياء
+// 
+// كل موديل بيمثل جزء أساسي من المنصة:
+// - User/Company: المستخدمين والشركات
+// - Department: الأقسام (محاسبة، برمجة، تسويق...)
+// - Employee: الموظفين الاصطناعيين
+// - Project/ProjectTask: المشاريع والمهام
+// - Conversation/Message: المحادثات (مدير↔موظف، موظف↔موظف)
+// - TokenUsage: إدارة التوكنات الذكية
+// - FileAttachment: الملفات المرفوعة
+// - EmployeeRequest: طلبات الموظف من المدير
+// ============================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// المستخدمين والشركات
+// ============================================
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String
+  password     String   // مشفّر بـ bcrypt
+  role         UserRole @default(OWNER)
+  companyId    String?
+  company      Company?   @relation(fields: [companyId], references: [id])
+  ownedCompany Company?   @relation("CompanyOwner")
+  blogPosts    BlogPost[]
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("users")
+}
+
+model Company {
+  id            String     @id @default(cuid())
+  name          String
+  description   String?    // وصف الشركة — الموظف بيستخدمو ليفهم الشغل
+  industry      String?    // المجال (تقنية، تجارة، خدمات...)
+  dialect       String     @default("ar") // اللغة من URL
+  tone          String     // نبرة التواصل
+  logoUrl       String?
+  
+  // نظام الاشتراكات — كل خطة ميزانية مختلفة
+  subscription  SubscriptionPlan @default(FREE_TRIAL)
+  
+  // ميزانية التوكنات الشهرية (بتتحدد من الاشتراك + ممكن تشحن زيادة)
+  tokenBudgetMonthly Int   @default(500000)  // 500K token بالشهر (تجربة مجانية)
+  tokenUsedMonthly   Int   @default(0)        // المستخدم هاد الشهر
+  tokenBudgetResetAt DateTime @default(now()) // تاريخ إعادة تعيين الميزانية
+  
+  // توكنات إضافية مشتراة (مش مجانية — بتتراكم لحد ما تخلص)
+  tokenAddOnsPurchased Int  @default(0) // إجمالي التوكنات المشتراة إضافياً
+  tokenAddOnsUsed      Int  @default(0) // المستخدم من الإضافات
+  
+  // تواريخ الاشتراك
+  subscriptionStartAt DateTime?  // تاريخ بداية الاشتراك المدفوع
+  subscriptionEndAt   DateTime?  // تاريخ انتهاء الاشتراك
+  
+  // حدود الاشتراك — عدد الأقسام المسموح
+  maxDepartments       Int     @default(1)  // أقصى عدد أقسام (حسب الاشتراك)
+  
+  // نظام HR — ساعة التقرير الدوري
+  hrReportHour  Int       @default(9) // الساعة اللي بيتقدملو فيها التقرير (0-23)
+  
+  owner         User       @relation("CompanyOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId       String     @unique
+  members       User[]
+  departments   Department[]
+  employees     Employee[]
+  projects      Project[]
+  workOrders    WorkOrder[]
+  meetings      Meeting[]
+  hrReports     HRReport[]
+  memories      CompanyMemory[]
+  auditLogs     AuditLog[]
+  integrations  Integration[]
+  accessTokens  CompanyAccessToken[]
+  platformPayment PlatformPaymentConfig?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  @@map("companies")
+}
+
+// ============================================
+// الأقسام (Departments)
+// كل قسم بيجمع موظفين بنفس التخصص
+// ولو ميزانية توكن مشتركة
+// ============================================
+
+model Department {
+  id          String   @id @default(cuid())
+  name        String   // اسم القسم (برمجة، محاسبة، تسويق...)
+  description String?  // وصف القسم
+  color       String   @default("#10b981") // لون القسم بالداشبورد
+  
+  // ميزانية التوكنات القسمية (حصة من ميزانية الشركة)
+  tokenBudgetPercent Int @default(0) // نسبة من ميزانية الشركة (0 = يتشارك مع باقي الأقسام)
+  
+  companyId   String
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  employees   Employee[]
+  projects    Project[]
+  workOrders  WorkOrder[]  // طلبات العمل المسندة للقسم
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("departments")
+}
+
+// ============================================
+// الموظفين الاصطناعيين (AI Agents)
+// ============================================
+
+model Employee {
+  id          String         @id @default(cuid())
+  name        String         // اسم الموظف (مثلاً: سارة)
+  role        String         // المسمى الوظيفي (مثلاً: مديرة سوشال ميديا)
+  status      EmployeeStatus @default(SETUP)
+  avatarColor String?        @default("#10b981") // لون الأفاتار
+  
+  // التخصص — كل موظف تخصص واحد فقط!
+  specialization String?     // التخصص الأساسي (مثلاً: محاسبة، برمجة، تسويق)
+  // ما يقدرش يتجاوز تخصصو — لو انطلب منو شي برا تخصصو بيرفض ويحوّل
+  
+  // هوية الموظف — بتتولّد من محرك التوليد
+  personality  String?       // وصف الشخصية المُولّدة
+  systemPrompt String?       // التعليمات الداخلية اللي بتوجّه سلوك الموظف
+  capabilities String?      // قدرات الموظف المُولّدة (JSON array)
+  constraints  String?       // قيود الموظف (JSON array)
+  suggestedCapabilities String? // قدرات مقترحة من النظام (JSON) — المدير يقرر يضيفها
+  
+  // إعدادات الموافقة
+  approvalMode ApprovalMode  @default(ALWAYS_APPROVE)
+  
+  // علاقة بالشركة والقسم — القسم إجباري!
+  companyId    String
+  company      Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  departmentId String?        // القسم — لازم يكون مربوط بقسم!
+  department   Department?    @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  
+  // البيانات المرتبطة
+  decisions    Decision[]
+  memories     EmployeeMemory[]
+  tasks        Task[]
+  tokenUsages  TokenUsage[]
+  files        FileAttachment[]
+  requests     EmployeeRequest[]
+  
+  // مشاركة في المحادثات (عبر جدول وسيط — يدعم محادثات متعددة الأطراف)
+  conversationParticipants ConversationParticipant[]
+  
+  // مهام المشاريع المسندة له
+  assignedProjectTasks ProjectTask[]
+  workOrderTasks      WorkOrderTask[]  // مهام طلبات العمل
+  
+  // جلسات الوكيل الذكي
+  agentSessions      AgentSession[]
+  
+  // توكنات الوصول — كل موظف له توكنات OAuth لمنصات مختلفة
+  accessTokens      EmployeeAccessToken[]
+  
+  // توجيه الموديلات — كل موظف ممكن يختار موديل لكل نوع مهمة
+  modelRoutings     EmployeeModelRouting[]
+  
+  // استبدال الموظف — لو تم استبداله بموظف آخر
+  replacedByEmployeeId String?
+  replacedAt        DateTime?
+  tokenAssignments  EmployeeTokenAssignment[]
+  
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@map("employees")
+}
+
+// ============================================
+// المشاريع والمهام
+// ============================================
+
+model Project {
+  id          String       @id @default(cuid())
+  name        String       // اسم المشروع
+  description String?      // وصف المشروع
+  status      ProjectStatus @default(PLANNING)
+  priority    Int          @default(5) // 1 = أعلى أولوية
+  
+  // المشروع ممكن يتبع لقسم معين أو يكون بين أقسام
+  departmentId String?     
+  department   Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  companyId    String
+  company      Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  
+  // من أنشأ المشروع
+  createdBy    String?      // userId أو employeeId
+  createdByType ActorType   @default(USER)
+  
+  tasks        ProjectTask[]
+  
+  startDate   DateTime?
+  deadline    DateTime?
+  completedAt DateTime?
+  
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@map("projects")
+}
+
+model ProjectTask {
+  id          String       @id @default(cuid())
+  title       String
+  description String?
+  status      TaskStatus   @default(PENDING)
+  priority    Int          @default(5)
+  
+  // المشروع اللي تنتمي ليه
+  projectId   String
+  project     Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  // الموظف المسندة ليه (ممكن تكون لأكتر من موظف بس هاد الرئيسي)
+  assigneeId  String?
+  assignee    Employee?    @relation(fields: [assigneeId], references: [id], onDelete: SetNull)
+  
+  // مين أنشأ المهمة
+  createdBy      String?
+  createdByType  ActorType  @default(USER)
+  
+  // التبعية — مهمة لازم تخلص قبل هادي
+  dependsOnId String?
+  dependsOn   ProjectTask? @relation("TaskDependency", fields: [dependsOnId], references: [id], onDelete: SetNull)
+  dependents  ProjectTask[] @relation("TaskDependency")
+  
+  // نتيجة المهمة
+  result      String?
+  
+  completedAt DateTime?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@map("project_tasks")
+}
+
+// ============================================
+// القرارات والسجلات
+// ============================================
+
+model Decision {
+  id          String         @id @default(cuid())
+  employeeId  String
+  employee    Employee       @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  
+  type        DecisionType
+  title       String
+  description String
+  reasoning   String?
+  data        String?        // JSON
+  
+  status      DecisionStatus @default(PENDING)
+  reviewedBy  String?
+  reviewNote  String?
+  reviewedAt  DateTime?
+  
+  createdAt   DateTime       @default(now())
+
+  @@map("decisions")
+}
+
+// ============================================
+// نظام الذاكرة
+// ============================================
+
+model CompanyMemory {
+  id          String   @id @default(cuid())
+  companyId   String
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  
+  category    String
+  key         String
+  value       String
+  embedding   String?  // JSON array
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([companyId, category, key])
+  @@map("company_memories")
+}
+
+model EmployeeMemory {
+  id          String   @id @default(cuid())
+  employeeId  String
+  employee    Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  
+  category    String
+  key         String
+  value       String
+  embedding   String?
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([employeeId, category, key])
+  @@map("employee_memories")
+}
+
+// ============================================
+// سجل المراجعة (Audit Log)
+// ============================================
+
+model AuditLog {
+  id          String     @id @default(cuid())
+  companyId   String
+  company     Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  
+  action      String
+  actorType   ActorType
+  actorId     String?
+  actorName   String?
+  details     String?    // JSON
+  
+  createdAt   DateTime   @default(now())
+
+  @@map("audit_logs")
+}
+
+// ============================================
+// المهام المستقلة (بدون مشروع)
+// ============================================
+
+model Task {
+  id          String     @id @default(cuid())
+  employeeId  String
+  employee    Employee   @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  
+  title       String
+  description String?
+  status      TaskStatus @default(PENDING)
+  priority    Int        @default(5)
+  
+  requestedBy String?
+  result      String?
+  completedAt DateTime?
+  
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@map("tasks")
+}
+
+// ============================================
+// المحادثات (مرونة: مدير↔موظف، موظف↔موظف، مجموعة)
+// ============================================
+
+model Conversation {
+  id          String       @id @default(cuid())
+  type        ConversationType @default(DIRECT)
+  title       String?      // عنوان المحادثة (للمحادثات الجماعية)
+  
+  // المشاركين — عبر جدول وسيط
+  participants ConversationParticipant[]
+  messages     Message[]
+  
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@map("conversations")
+}
+
+model ConversationParticipant {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  
+  participantType ParticipantType // مين المشارك
+  participantId   String          // معرّف المشارك (userId أو employeeId)
+  participantName String          // اسم المشارك للعرض
+  
+  // لو المشارك موظف
+  employee     Employee?    @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  employeeId   String?
+  
+  joinedAt     DateTime     @default(now())
+
+  @@unique([conversationId, participantType, participantId])
+  @@map("conversation_participants")
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  
+  senderType     SenderType
+  senderId       String?
+  senderName     String
+  
+  content        String
+  metadata       String?      // JSON
+  
+  createdAt      DateTime     @default(now())
+
+  @@map("messages")
+}
+
+// ============================================
+// إدارة التوكنات — تتبع الاستهلاك بذكاء
+// ============================================
+
+model TokenUsage {
+  id          String          @id @default(cuid())
+  
+  // مين استخدم التوكن
+  employeeId  String
+  employee    Employee        @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  
+  // تفاصيل الاستخدام
+  modelTier   ModelTier       @default(MEDIUM) // مستوى الموديل المستخدم
+  tokensIn    Int             // توكنات الإدخال
+  tokensOut   Int             // توكنات الإخراج
+  totalTokens Int             // المجموع
+  
+  // السياق
+  requestType RequestType     // نوع الطلب (محادثة، توليد، تلخيص...)
+  conversationId String?      // المحادثة (لو موجودة)
+  
+  // التكلفة التقريبية (بالدولار)
+  estimatedCost Float         @default(0)
+  
+  // هل كان في كاش؟
+  cached      Boolean         @default(false)
+  
+  createdAt   DateTime        @default(now())
+
+  @@map("token_usages")
+}
+
+// ============================================
+// رفع الملفات — المدير يرفع للموظف
+// ============================================
+
+model FileAttachment {
+  id          String   @id @default(cuid())
+  
+  // الملف لمين
+  employeeId  String
+  employee    Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  
+  // مين رفع الملف
+  uploadedBy      String   // userId أو employeeId
+  uploadedByType  ActorType @default(USER)
+  
+  // تفاصيل الملف
+  fileName    String   // الاسم الأصلي
+  fileType    String   // MIME type
+  fileSize    Int      // الحجم بالبايت
+  filePath    String   // المسار على السيرفر
+  description String?  // وصف الملف
+  
+  // تصنيف الملف
+  category    FileCategory @default(GENERAL)
+  
+  // هل الموظف طلب هاد الملف؟
+  requestId   String?  // لو الملف رد على طلب
+  
+  createdAt   DateTime @default(now())
+
+  @@map("file_attachments")
+}
+
+// ============================================
+// طلبات الموظف من المدير
+// الموظف يطلب معلومات أو ملفات أو موافقة
+// ============================================
+
+model EmployeeRequest {
+  id          String          @id @default(cuid())
+  
+  // مين طلب
+  employeeId  String
+  employee    Employee        @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  
+  // نوع الطلب
+  type        EmployeeRequestType
+  
+  // تفاصيل الطلب
+  title       String          // عنوان مختصر
+  description String          // تفصيل الطلب
+  priority    Int             @default(5)
+  
+  // حالة الطلب
+  status      RequestStatus   @default(PENDING)
+  
+  // رد المدير
+  response    String?         // رد المدير (نص أو رابط ملف)
+  respondedBy String?         // userId
+  respondedAt DateTime?
+  
+  // ربط بمحادثة (لو الطلب جاي من محادثة)
+  conversationId String?
+  messageId      String?
+  
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@map("employee_requests")
+}
+
+// ============================================
+// التكاملات (Integrations — OAuth Tokens)
+// ============================================
+
+model Integration {
+  id            String           @id @default(cuid())
+  companyId     String
+  company       Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  
+  platform      IntegrationPlatform
+  accessToken   String
+  refreshToken  String?
+  tokenExpiresAt DateTime?
+  scopes        String?
+  platformUserId String?
+  platformName  String?
+  
+  isActive      Boolean          @default(true)
+  lastSyncedAt  DateTime?
+  
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  @@map("integrations")
+}
+
+// ============================================
+// Employee Access Tokens — per-employee OAuth tokens
+// Ahmad (social media manager) gets Instagram + Facebook tokens
+// ============================================
+
+
+// ============================================
+// Employee Model Routing — per-employee per-task model selection
+// المصمم بدو صورة → موديل فلاني
+// المحاسب بدو قرار → موديل فلاني
+// ============================================
+
+
+// ============================================
+// Enums
+// ============================================
+
+enum UserRole {
+  OWNER
+  ADMIN
+  VIEWER
+}
+
+// ============================================
+// خطط الاشتراك — كل خطة ميزانية توكن مختلفة
+// ============================================
+enum SubscriptionPlan {
+  FREE_TRIAL   // تجربة مجانية — 500K token/شهر + قسم واحد + موظفين اثنين
+  STARTER      // $29/شهر — 3M token/شهر + 3 أقسام + 5 موظفين
+  PROFESSIONAL // $79/شهر — 15M token/شهر + 10 أقسام + 15 موظفين
+  ENTERPRISE   // $199/شهر — 50M token/شهر + أقسام غير محدودة + موظفين غير محدودين
+}
+
+enum EmployeeStatus {
+  SETUP
+  ACTIVE
+  PAUSED
+  AWAITING_APPROVAL
+  REPLACED
+  DELETED
+}
+
+enum ApprovalMode {
+  ALWAYS_APPROVE
+  AUTO_WITH_NOTIFY
+  AUTO_SILENT
+}
+
+enum DecisionType {
+  POST_PUBLISH
+  COMMENT_REPLY
+  MESSAGE_REPLY
+  CONTENT_CREATE
+  SCHEDULE_CHANGE
+  BUDGET_ALLOCATION
+  TASK_ASSIGNMENT
+  OTHER
+}
+
+enum DecisionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  AUTO_EXECUTED
+  CANCELLED
+}
+
+enum ActorType {
+  SYSTEM
+  USER
+  EMPLOYEE
+}
+
+enum TaskStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum ProjectStatus {
+  PLANNING     // تخطيط
+  IN_PROGRESS  // جاري التنفيذ
+  ON_HOLD      // متوقف مؤقتاً
+  COMPLETED    // مكتمل
+  CANCELLED    // ملغى
+}
+
+enum ConversationType {
+  DIRECT          // محادثة مباشرة (مدير ↔ موظف)
+  EMPLOYEE_CHAT   // محادثة بين موظفين
+  DEPARTMENT_CHAT // محادثة القسم كامل
+  PROJECT_CHAT    // محادثة مشروع
+  MEETING         // اجتماع جماعي
+}
+
+enum ParticipantType {
+  USER     // مستخدم بشري (المدير)
+  EMPLOYEE // موظف اصطناعي
+}
+
+enum SenderType {
+  USER
+  EMPLOYEE
+  SYSTEM
+}
+
+enum ModelTier {
+  LIGHT    // موديل خفيف ورخيص — للمهام البسيطة
+  MEDIUM   // موديل متوسط — لمعظم المحادثات
+  HEAVY    // موديل ثقيل وذكي — للمهام المعقدة
+}
+
+enum RequestType {
+  CHAT          // محادثة عادية
+  GENERATION    // توليد محتوى
+  IMAGE         // توليد صور
+  SUMMARIZATION // تلخيص
+  ANALYSIS      // تحليل
+  TRANSLATION   // ترجمة
+  CODE          // كتابة كود
+  DECISION      // اتخاذ قرار
+  OTHER         // نوع آخر
+}
+
+enum FileCategory {
+  INVOICE      // فاتورة
+  CONTRACT     // عقد
+  INVENTORY    // جرد
+  BANK_STATEMENT // كشف بنكي
+  TAX_DOCUMENT // مستند ضريبي
+  REPORT       // تقرير
+  IMAGE        // صورة
+  SPREADSHEET  // جدول بيانات
+  GENERAL      // عام
+}
+
+enum EmployeeRequestType {
+  INFORMATION  // طلب معلومات
+  FILE         // طلب ملف/مستند
+  APPROVAL     // طلب موافقة
+  CLARIFICATION // توضيح
+  RESOURCE     // طلب موارد
+}
+
+enum RequestStatus {
+  PENDING      // بانتظار الرد
+  APPROVED     // تمت الموافقة / تم الرد
+  REJECTED     // تم الرفض
+  CANCELLED    // تم الإلغاء
+}
+
+// ============================================
+// طلبات العمل (Work Orders)
+// المدير يكتب شو بده والنظام يوزّع على الأقسام/الموظفين
+// ============================================
+
+model WorkOrder {
+  id          String           @id @default(cuid())
+  
+  // مين أنشأ الطلب
+  companyId   String
+  company     Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdById String           // userId
+  createdByName String         // اسم المنشئ
+  
+  // تفاصيل الطلب
+  title       String           // عنوان مختصر
+  description String           // تفصيل الطلب (شو بدك تساوي)
+  priority    Int              @default(5) // 1 = أعلى أولوية
+  
+  // حالة الطلب
+  status      WorkOrderStatus  @default(SUBMITTED)
+  progress    Int              @default(0) // 0-100 نسبة الإنجاز
+  
+  // القسم/الموظف المسند
+  assignedDepartmentId String?
+  assignedDepartment   Department? @relation(fields: [assignedDepartmentId], references: [id], onDelete: SetNull)
+  
+  // المهام الفرعية (اللي الموظفين بيعملوها)
+  subTasks    WorkOrderTask[]
+  
+  // سجل التحديثات (مين عمل شو ومتى)
+  updates     WorkOrderUpdate[]
+  
+  // المحادثة المرتبطة
+  conversationId String?
+  
+  deadline    DateTime?
+  completedAt DateTime?
+  
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@map("work_orders")
+}
+
+model WorkOrderTask {
+  id          String       @id @default(cuid())
+  
+  // الطلب الأم
+  workOrderId String
+  workOrder   WorkOrder    @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+  
+  // تفاصيل المهمة
+  title       String
+  description String?
+  status      TaskStatus   @default(PENDING)
+  
+  // الموظف المسند
+  assigneeId  String?
+  assignee    Employee?    @relation(fields: [assigneeId], references: [id], onDelete: SetNull)
+  
+  // القسم المسند
+  departmentId String?
+  
+  // نتيجة المهمة
+  result      String?
+  completedAt DateTime?
+  approvedAt  DateTime?
+  approvedBy  String?
+  rejectedAt  DateTime?
+  rejectedBy  String?
+  
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@map("work_order_tasks")
+}
+
+model WorkOrderUpdate {
+  id          String   @id @default(cuid())
+  
+  // الطلب المرتبط
+  workOrderId String
+  workOrder   WorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+  
+  // مين عمل التحديث
+  updatedByType ActorType @default(EMPLOYEE)
+  updatedById   String?   // employeeId أو userId
+  updatedByName String
+  
+  // محتوى التحديث
+  content     String   // مثلاً: "عملت التقرير المالي وبعتو لقسم البرمجة عشان يكملو"
+  
+  // نوع التحديث
+  type        UpdateType @default(PROGRESS)
+  
+  createdAt   DateTime @default(now())
+
+  @@map("work_order_updates")
+}
+
+enum WorkOrderStatus {
+  SUBMITTED      // تم الإرسال — بنتظر تعيين
+  ASSIGNING      // جاري التعيين على الأقسام
+  IN_PROGRESS    // جاري التنفيذ
+  PARTIALLY_DONE // انجز جزئياً
+  COMPLETED      // مكتمل
+  CANCELLED      // ملغى
+}
+
+enum UpdateType {
+  PROGRESS       // تحديث تقدم
+  ASSIGNMENT     // تعيين موظف/قسم
+  HANDOFF        // تسليم من قسم لقسم
+  QUESTION       // سؤال من موظف
+  COMPLETION     // إتمام مهمة
+  STATUS_CHANGE  // تغيير حالة
+}
+
+enum IntegrationPlatform {
+  FACEBOOK
+  INSTAGRAM
+  TWITTER
+  LINKEDIN
+  GOOGLE
+  TIKTOK
+  YOUTUBE
+  SNAPCHAT
+  WHATSAPP_BUSINESS
+  EMAIL
+  STRIPE
+  SHOPIFY
+  CUSTOM_API
+  OTHER
+}
+
+// ============================================
+// موديلات LLM المتعددة (Multi-Model Support)
+// صاحب المنصة يضيف موديلات متعددة
+// والنظام يختار الأنسب لكل مهمة
+// ============================================
+
+model LLMModel {
+  id          String   @id @default(cuid())
+  
+  // اسم الموديل (مثلاً: Grok-3, Llama-70B, DeepSeek-V3)
+  name        String
+  
+  // مزوّد الموديل
+  provider    String   // together, grok, openrouter, local, custom
+  
+  // بيانات الاتصال
+  apiKeyEnvVar String?  // اسم متغير البيئة اللي فيه الـ API Key
+  apiKeyValue  String?  // أو القيمة مباشرة (مشفّرة)
+  baseUrl      String?  // رابط API مخصص
+  
+  // معرّف الموديل عند المزود (مثلاً: meta-llama/Meta-Llama-3.1-70B)
+  modelId     String
+  
+  // مستوى الموديل — النظام بيختار حسب المهمة
+  tier        ModelTier @default(MEDIUM)
+  
+  // نوع المهام المناسبة
+  capabilities String? // JSON array: ["CHAT", "CODE", "ANALYSIS", "GENERATION"]
+  
+  // أسعار تقريبية (لكل مليون token)
+  priceInput  Float    @default(0)
+  priceOutput Float    @default(0)
+  
+  // حدود
+  maxTokens   Int      @default(4096)
+  maxContext  Int      @default(128000)
+  
+  // حالة الموديل
+  isActive    Boolean  @default(true)
+  isDefault   Boolean  @default(false) // الموديل الافتراضي لكل tier
+  
+  // أولوية الاختيار (أقل = مُفضّل أكثر)
+  priority    Int      @default(5)
+  
+  // إحصائيات استخدام هاد الموديل
+  totalCalls  Int      @default(0)
+  totalTokensIn  Int   @default(0)
+  totalTokensOut Int   @default(0)
+  totalCost   Float    @default(0)
+  lastUsedAt  DateTime?
+  
+  // جلسات الوكيل اللي استخدمت هاد الموديل
+  agentSessions AgentSession[]
+  
+  // Employee Model Routing — per-employee per-task model selection
+  employeeModelRoutings EmployeeModelRouting[]
+  
+  // توجيه الموظفين — الموظفين اللي اختاروا هاد الموديل لمهامهم
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("llm_models")
+}
+
+// ============================================
+// توكنات الوصول للموظفين (Employee Access Tokens)
+// كل موظف ممكن يربط حساباته على المنصات المختلفة
+// المنصة بيستخدم هاد التوكنات للتكامل مع المنصات
+// ============================================
+
+model EmployeeAccessToken {
+  id            String   @id @default(cuid())
+  employeeId    String
+  employee      Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  platform      IntegrationPlatform
+  accessToken   String
+  refreshToken  String?
+  tokenExpiresAt DateTime?
+  scopes        String?
+  platformUserId String?
+  platformName   String?
+  platformAvatar String?
+  isActive      Boolean  @default(true)
+  lastUsedAt    DateTime?
+  inheritedFromEmployeeId String?   // لو التوكن ورثته من موظف استبدل
+  inheritedAt   DateTime?
+  metadata      String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  @@unique([employeeId, platform])
+  @@map("employee_access_tokens")
+}
+
+// ============================================
+// توجيه الموديلات للموظفين (Employee Model Routing)
+// كل موظف ممكن يختار موديل مختلف لكل نوع مهمة
+// مثلاً: الموظف المبرمج يختار موديل قوي للكود
+// و الموظف المدير يختار موديل سريع للترجمة
+// ============================================
+
+model EmployeeModelRouting {
+  id          String   @id @default(cuid())
+  employeeId  String
+  employee    Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  taskType    String    // CHAT, GENERATION, IMAGE, ANALYSIS, CODE, DECISION, TRANSLATION, SUMMARIZATION
+  llmModelId  String?
+  llmModel    LLMModel? @relation(fields: [llmModelId], references: [id], onDelete: SetNull)
+  priority    Int       @default(5) // أقل = مُفضّل أكثر
+  isActive    Boolean   @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  @@unique([employeeId, taskType])
+  @@map("employee_model_routing")
+}
+
+// ============================================
+// جلسات الوكيل الذكي (Agent Sessions)
+// كل ما الموظف يحتاج ذكاء → تنفتح جلسة
+// الوكيل يشتغل → السيرفر يراجع → يوافق/يرفض
+// المشترك ما يشوف هاد — يشوف إنو الموظف يشتغل
+// ============================================
+
+model AgentSession {
+  id          String   @id @default(cuid())
+  
+  // مين طلبت الوكيل
+  employeeId  String
+  employee    Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  companyId   String
+  
+  // نوع المهمة
+  taskType    RequestType  // CHAT, GENERATION, ANALYSIS, CODE...
+  taskTitle   String       // وصف مختصر
+  taskInput   String       // المدخلات (الرسالة أو المهمة)
+  
+  // موديل LLM المستخدم
+  llmModelId  String?
+  llmModel    LLMModel? @relation(fields: [llmModelId], references: [id], onDelete: SetNull)
+  
+  // نتيجة الوكيل
+  agentOutput   String?    // نتيجة الوكيل الأولية
+  agentTokensIn  Int      @default(0)
+  agentTokensOut Int      @default(0)
+  
+  // مراجعة السيرفر
+  reviewResult  String?   // APPROVED, REJECTED, NEEDS_REVISION
+  reviewNote    String?   // ملاحظة المراجعة
+  reviewerModelId String? // موديل المراجعة (لو استخدمنا LLM للمراجعة)
+  
+  // المحاولة الحالية
+  attempt     Int      @default(1)
+  maxAttempts Int      @default(3)  // أقصى عدد محاولات
+  
+  // النتيجة النهائية (اللي المشترك يشوفها)
+  finalOutput String?   // النتيجة بعد الموافقة
+  
+  // حالة الجلسة
+  status      AgentSessionStatus @default(SPAWNING)
+  
+  // توكنات
+  totalTokensIn  Int   @default(0)
+  totalTokensOut Int   @default(0)
+  totalCost   Float    @default(0)
+  
+  startedAt   DateTime?
+  completedAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("agent_sessions")
+}
+
+enum AgentSessionStatus {
+  SPAWNING       // جاري التشغيل
+  RUNNING        // الوكيل يشتغل
+  REVIEWING      // السيرفر يراجع النتيجة
+  REVISION       // الوكيل يعيد بعد ملاحظات
+  COMPLETED      // تمت الموافقة — النتيجة جاهزة
+  FAILED         // فشل بعد كل المحاولات
+  CANCELLED      // تم الإلغاء
+}
+
+// ============================================
+// الاجتماعات (Meetings)
+// المدير أو الموظفين يقدروا يعملوا اجتماعات
+// ============================================
+
+model Meeting {
+  id          String   @id @default(cuid())
+  
+  // مين أنشأ الاجتماع
+  companyId   String
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdById String?  // userId أو employeeId
+  createdByType ActorType @default(USER)
+  createdByName String
+  
+  // تفاصيل الاجتماع
+  title       String   // عنوان الاجتماع (عنوينش عم بتفقو)
+  description String?  // وصف/هدف الاجتماع
+  agenda      String?  // جدول الأعمال (JSON array)
+  
+  // نوع الاجتماع
+  type        MeetingType @default(SCHEDULED)
+  
+  // وقت الاجتماع
+  scheduledAt DateTime  // الوقت المحدد
+  duration    Int       @default(30) // المدة بالدقائق
+  endedAt     DateTime?
+  
+  // الأقسام والموظفين المشمولين
+  departmentIds String? // JSON array من معرّفات الأقسام
+  participantIds String? // JSON array من معرّفات الموظفين
+  
+  // المحادثة المرتبطة بالاجتماع
+  conversationId String?
+  
+  // حالة الاجتماع
+  status      MeetingStatus @default(SCHEDULED)
+  
+  // ملاحظات الاجتماع
+  notes       String?  // ملاحظات/محضر الاجتماع
+  summary     String?  // ملخص الاجتماع (يُنشأ بالذكاء)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("meetings")
+}
+
+// ============================================
+// نظام HR — تقارير الموارد البشرية
+// يتابع الأداء ويقدّم تقارير دورية
+// ============================================
+
+model HRReport {
+  id          String   @id @default(cuid())
+  
+  companyId   String
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  
+  // نوع التقرير
+  type        HRReportType @default(DAILY)
+  
+  // محتوى التقرير
+  title       String
+  summary     String   // ملخص عام
+  details     String   // JSON — تفاصيل التقرير الكاملة
+  
+  // إحصائيات الأداء
+  totalEmployees     Int    @default(0)
+  activeEmployees    Int    @default(0)
+  tasksCompleted     Int    @default(0)
+  tasksPending       Int    @default(0)
+  avgResponseTime    Float  @default(0) // متوسط وقت الاستجابة بالثواني
+  tokenUsage         Int    @default(0) // التوكنات المستخدمة
+  
+  // توصيات HR
+  recommendations    String? // JSON array من التوصيات
+  alerts             String? // JSON array من التنبيهات
+  
+  // الفترة الزمنية
+  periodStart DateTime
+  periodEnd   DateTime
+  
+  // هل تم تقديم التقرير للمشترك؟
+  deliveredAt DateTime?
+  
+  createdAt   DateTime @default(now())
+
+  @@map("hr_reports")
+}
+
+enum MeetingType {
+  SCHEDULED    // اجتماع مجدول
+  EMERGENCY    // اجتماع طارئ
+  STANDUP      // اجتماع يومي قصير
+  REVIEW       // مراجعة أداء
+  BRAINSTORM   // عصف ذهني
+}
+
+enum MeetingStatus {
+  SCHEDULED    // مجدول
+  IN_PROGRESS  // جاري
+  COMPLETED    // مكتمل
+  CANCELLED    // ملغى
+}
+
+enum HRReportType {
+  DAILY        // تقرير يومي
+  WEEKLY       // تقرير أسبوعي
+  MONTHLY      // تقرير شهري
+  ON_DEMAND    // عند الطلب
+}
+
+// ============================================
+// إعدادات المنصة (Platform Branding & Settings)
+// ============================================
+
+model PlatformSettings {
+  id           String   @id @default(cuid())
+  platformName String   @default("One Employer Company")
+  logoUrl      String?
+  faviconUrl   String?
+  primaryColor String   @default("emerald")  // primary brand color
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("platform_settings")
+}
+
+// ============================================
+// Content Management — Landing page sections
+// EN content shows on /en, AR content shows on /ar
+// ============================================
+
+model ContentSection {
+  id          String   @id @default(cuid())
+  section     String   // hero, features, pricing, faq, etc.
+  itemKey     String   // badge, title, subtitle, item_1_title, etc.
+  valueEn     String   @default("") // English value (shown on /en)
+  valueAr     String   @default("") // Arabic value (shown on /ar)
+  icon        String?  // optional icon identifier
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([section, itemKey])
+  @@map("content_sections")
+}
+
+// ============================================
+// Visitor Tracking — Analytics
+// ============================================
+
+model Visitor {
+  id          String   @id @default(cuid())
+  path        String   @default("/") // URL path visited
+  referrer    String?  // where the visitor came from
+  country     String?  // visitor country
+  ip          String?  // visitor IP
+  sessionId   String?  // browser session ID
+  userAgent   String?  // browser info
+  language    String?  // 'ar' or 'en'
+  createdAt   DateTime @default(now())
+
+  @@map("visitors")
+}
+
+// ============================================
+// SEO Head/Footer Tags — Custom HTML tags
+// ============================================
+
+model HeadTag {
+  id          String   @id @default(cuid())
+  name        String   // descriptive name
+  tagType     String   // script, meta, link, style, base, noscript
+  content     String   // full HTML tag content
+  position    String   @default("head") // head or footer
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("head_tags")
+}
+
+// ============================================
+// Blog System — Articles with bilingual content
+// Full rich text, images with alt/title per image
+// ============================================
+
+model BlogPost {
+  id            String   @id @default(cuid())
+  slug          String   @unique  // URL-friendly identifier
+  
+  // Bilingual titles
+  titleAr       String             // Arabic title
+  titleEn       String             // English title
+  
+  // Bilingual content (rich text stored as HTML/Markdown)
+  contentAr     String             // Arabic content body
+  contentEn     String             // English content body
+  
+  // Bilingual excerpts (short summary for listing)
+  excerptAr     String?            // Arabic excerpt
+  excerptEn     String?            // English excerpt
+  
+  // Cover image
+  coverImage    String?            // URL of cover image
+  coverImageAltAr String?          // Arabic alt text for cover
+  coverImageAltEn String?          // English alt text for cover
+  coverImageTitleAr String?        // Arabic title for cover
+  coverImageTitleEn String?        // English title for cover
+  
+  // Category & Tags
+  category      String?            // e.g. "technology", "business", "ai"
+  tags          String?            // JSON array of tags
+  
+  // SEO metadata (bilingual)
+  metaTitleAr   String?            // Arabic SEO title
+  metaTitleEn   String?            // English SEO title
+  metaDescAr    String?            // Arabic SEO description
+  metaDescEn    String?            // English SEO description
+  
+  // Author
+  authorId      String?            // User who created the post
+  author        User?    @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  
+  // Publishing
+  status        BlogPostStatus @default(DRAFT)
+  featured      Boolean  @default(false)  // Featured post
+  views         Int      @default(0)
+  
+  // Images inside the article (separate model for alt/title per image)
+  images        BlogImage[]
+  
+  publishedAt   DateTime?          // When it was published
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("blog_posts")
+}
+
+model BlogImage {
+  id            String   @id @default(cuid())
+  
+  // The post this image belongs to
+  postId        String
+  post          BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  
+  // Image details
+  url           String             // Image URL
+  altAr         String?            // Arabic alt text
+  altEn         String?            // English alt text
+  titleAr       String?            // Arabic image title
+  titleEn       String?            // English image title
+  captionAr     String?            // Arabic caption (shown below image)
+  captionEn     String?            // English caption
+  
+  // Position in the article
+  position      Int      @default(0)  // Order within article
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("blog_images")
+}
+
+enum BlogPostStatus {
+  DRAFT        // Under editing
+  REVIEW       // Pending review
+  PUBLISHED    // Live and visible
+  ARCHIVED     // Removed from public view
+}
+
+// ============================================
+// نظام حماية IP — IP Security & Blocking
+// إدارة حظر IP + سجل الريكويستات المشبوهة
+// ============================================
+
+model BlockedIP {
+  id            String   @id @default(cuid())
+  ip            String   @unique    // IP address
+  reason        String              // سبب الحظر (manual, auto_suspicious, auto_path_scan, auto_bruteforce, etc.)
+  blockedBy     String?             // Email of admin who blocked (null = auto-blocked)
+  country       String?             // Country from geo lookup (if available)
+  path          String?             // The path that triggered the block
+  attemptDetail String?             // تفاصيل المحاولة (what they tried to do)
+  requestCount  Int      @default(1) // عدد الريكويستات المشبوهة
+  autoBlocked   Boolean  @default(false) // true = نظام حظر تلقائي
+  isActive      Boolean  @default(true)  // true = حظر فعال
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  unblockedAt   DateTime?           // When it was unblocked
+
+  @@map("blocked_ips")
+}
+
+model SecurityLog {
+  id            String   @id @default(cuid())
+  ip            String              // IP address
+  path          String              // Request path
+  method        String              // GET, POST, etc.
+  statusCode    Int      @default(0) // HTTP response code
+  userAgent     String?             // Browser/bot info
+  referer       String?             // Where they came from
+  isSuspicious  Boolean  @default(false) // flagged as suspicious
+  reason        String?             // Why it's suspicious
+  country       String?             // Country (from headers/geo)
+  blocked       Boolean  @default(false) // Whether this request resulted in a block
+  createdAt     DateTime @default(now())
+
+  @@map("security_logs")
+  @@index([ip])
+  @@index([isSuspicious])
+  @@index([createdAt])
+}
+
+// ============================================
+// سجل نشاطات المنصة — Platform Activity Log
+// ============================================
+
+model ActivityLog {
+  id          String   @id @default(cuid())
+  action      String              // login, logout, upload_logo, upload_favicon, create_blog, update_blog, delete_blog, register, create_company, create_employee, update_settings, rebuild, block_ip, unblock_ip
+  userId      String?             // User who performed the action
+  userEmail   String?             // Email of the user
+  userRole    String?             // Role: OWNER, ADMIN, MANAGER, EMPLOYEE
+  ip          String?             // IP address
+  details     String?             // JSON string with action details
+  statusCode  Int      @default(200) // HTTP response code
+  path        String?             // API path that was called
+  method      String?             // GET, POST, PUT, DELETE
+  userAgent   String?             // Browser info
+  success     Boolean  @default(true) // Whether the action succeeded
+  error       String?             // Error message if failed
+  createdAt   DateTime @default(now())
+
+  @@map("activity_logs")
+  @@index([action])
+  @@index([userId])
+  @@index([createdAt])
+}
+
+
+// ============================================
+// تصريحات الدخول — Company Access Tokens
+// ============================================
+model CompanyAccessToken {
+  id            String   @id @default(cuid())
+  companyId     String
+  company       Company  @relation(fields: [companyId], references: [id])
+  platform      String   // GITHUB, FACEBOOK, SSH_SERVER, etc.
+  name          String   // اسم التصريح — مثلاً "غيت هاب الشركة"
+  accessToken   String   // التوكن / كلمة السر / API Key
+  refreshToken  String?  // التوكن تبع التجديد
+  scopes        String?  // الصلاحيات — JSON
+  metadata      String?  // معلومات إضافية — JSON (عنوان سيرفر، بورت...)
+  isActive      Boolean  @default(true)
+  assignedToEmployees EmployeeTokenAssignment[]
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([companyId, platform, name])
+  @@map("company_access_tokens")
+}
+
+model EmployeeTokenAssignment {
+  id                String   @id @default(cuid())
+  companyTokenId    String
+  companyToken      CompanyAccessToken @relation(fields: [companyTokenId], references: [id])
+  employeeId        String
+  employee          Employee @relation(fields: [employeeId], references: [id])
+  inheritedFromEmployeeId String? // لو ورث من موظف سابق
+  isActive          Boolean  @default(true)
+  createdAt         DateTime @default(now())
+
+  @@unique([companyTokenId, employeeId])
+  @@map("employee_token_assignments")
+}
+
+// ============================================
+// إعداد الدفع — Payment Config
+// ============================================
+model PlatformPaymentConfig {
+  id            String   @id @default(cuid())
+  companyId     String   @unique
+  company       Company  @relation(fields: [companyId], references: [id])
+  provider      String   @default("dodo") // dodo
+  apiKey        String?
+  webhookUrl    String?
+  isConnected   Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("platform_payment_configs")
+}
+

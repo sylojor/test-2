@@ -1,0 +1,47 @@
+[
+  {
+    "url": "http://whois.nic.ai",
+    "name": "WHOIS",
+    "snippet": "Access to Identity Digital Whois information is provided to assist in determining the contents of a domain name registration record in the registry database. Missing: oec. | Show results with: oec.",
+    "host_name": "whois.nic.ai",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.eurodns.com/whois-search/ai-domain-name",
+    "name": ".AI domain WHOIS Search | EuroDNS",
+    "snippet": "If the domain is not registered, the WhoIs search will show it as available. If it's taken, you'll see the registration details or privacy-protected info. Missing: oec. | Show results with: oec.",
+    "host_name": "www.eurodns.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://lookup.icann.org",
+    "name": "ICANN Lookup",
+    "snippet": "The ICANN registration data lookup tool gives you the ability to look up the current registration data for domain names and Internet number resources. Missing: oec. | Show results with: oec.",
+    "host_name": "lookup.icann.org",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://who.is",
+    "name": "WHOIS Search, Domain Name, Website, and IP Tools - Who.is",
+    "snippet": "Instantly look up registration data, contact details, nameservers, DNS records, and more for any domain name or IP address using WHOIS and RDAP protocols. Missing: oec. | Show results with: oec.",
+    "host_name": "who.is",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.godaddy.com/whois",
+    "name": "WHOIS Domain Lookup - Find out who owns a website - GoDaddy",
+    "snippet": "Use our WHOIS lookup tool to check domain name availability or to discover the contact information of a domain owner. Search the WHOIS database today. Missing: oec. | Show results with: oec.",
+    "host_name": "www.godaddy.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  }
+]

@@ -1,0 +1,47 @@
+[
+  {
+    "url": "https://netcupvoucher.com/blog/netcup-vs-hetzner-after-rampocalypse-2026",
+    "name": "Netcup vs Hetzner After the RAMpocalypse - Updated 2026",
+    "snippet": "New Price RS 1000 G12 4 dedicated 8 GB DDR5 ECC 256 GB NVMe €8.74/mo €10.36/mo. Netcup RS 1000 G12 €8.74. New Price €10.36/mo ~€12.49/mo … 8 GB ...\nThe RS 1000 G12 still gives you 4 dedicated EPYC 9645 cores for €10.36/mo. To get dedicated cores from Hetzner, you're now looking at ~€16.49 ...\nRS 1000 G12 4 dedicated 8 GB DDR5 ECC 256 GB NVMe €8.74/mo €10.36/mo RS. Netcup RS 1000 G12 €8.74 ・ 8 GB of DDR5 ECC RAM, 256 ・ networking ...",
+    "host_name": "netcupvoucher.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.vpsbenchmarks.com/yabs/netcup-4c-8gb-20251001-5d614e",
+    "name": "netcup - RS 1000 G12 Yab - VPSBenchmarks",
+    "snippet": "11€ 1 month free on the RS 2000 G12 root server plan powered by 8 AMD EPYCTM 9645 cores with 16GB RAM. Value: 24.12€ … 9645 cores with 8GB RAM. ...",
+    "host_name": "www.vpsbenchmarks.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.reddit.com/r/hetzner/comments/1sjn46b/hetzner_cpx31_vs_netcup_vps_2000_g12_which_one",
+    "name": "Hetzner CPX31 vs Netcup VPS 2000 G12 – which one for a small SaaS?",
+    "snippet": "Netcup VPS 2000 G12 (8 vCore, 16GB RAM) They're roughly the same price, but the specs look very different. Netcup offers more raw resources. ... Hetzner CPX32 or Netcup VPS 2000 G12? - Reddit NetCup Benchmark | RS 2000 G12 : r/VPS - Reddit More results from www.reddit.com\nNetcup VPS 2000 G12 (8 vCore, 16GB RAM) They're roughly the same price, Netcup's RS 1000 G12 or. Netcup gives more RAM/cores for the price. Netcup RS 1000 G12 2M Rabatt for private minecraft server hosting. : r/VPS Seeking better price-to-performance than my current netcup RS 1000 G12 (EU Based) : r/VPS More results from www.reddit.com",
+    "host_name": "www.reddit.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://lowendtalk.com/discussion/219265/wanted-netcup-rs-1000-rs-2000-g12-promotional-server-reasonable-premium-offered",
+    "name": "[WANTED] netcup RS 1000 / RS 2000 G12 promotional server - LowEndTalk",
+    "snippet": "RS 1000 G12 Pro 4 dedicated vCores / 8 GB DDR5 ECC / 512 GB NVMe Storage-upgraded. RAM and storage upgraded version … 16 GB DDR5 ECC / 1 TB NVMe\nRAM and storage upgraded version ・ 16 GB DDR5 ECC. Renewal price must be reasonable ・ premium depending on the model ・ has a VPS that's ・ ... Netcup launches new plan(?) RS1000 \"Ultra\" 12GB 6 Cores for 11 euros~ - Page 4 Netcup RS 2000 G9 WSV22 - 16GB Ram for €11,20 month - LowEndTalk More results from lowendtalk.com\nRS 1000 G12 Pro 4 dedicated vCores / 8 GB DDR5 ECC / 512 GB NVMe Storage-upgraded. RAM and storage upgraded version … 16 GB DDR5 ECC / 1 TB NVMe Netcup launches new plan(?) RS1000 \"Ultra\" 12GB 6 Cores for 11 euros NETCUP - Black Week Sale (24th Nov - 28th Nov) - Page 6 - LowEndTalk More results from lowendtalk.com",
+    "host_name": "lowendtalk.com",
+    "rank": 3,
+    "date": "Jul 18, 2026",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.netcup.com/en/server/vps-lite",
+    "name": "Permanently Affordable VPS Offers - netcup",
+    "snippet": "Affordable VPS plans starting at €1.34/month for demanding applications. Fast hardware RAID, KVM virtualization, redundant power and network connections.",
+    "host_name": "www.netcup.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  }
+]

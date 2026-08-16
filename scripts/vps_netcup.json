@@ -1,0 +1,74 @@
+[
+  {
+    "url": "https://www.netcup.com/en/server/vps-lite",
+    "name": "Permanently Affordable VPS Offers - netcup",
+    "snippet": "Affordable VPS plans starting at €1.34/month for demanding applications. Fast hardware RAID, KVM virtualization, redundant power and network connections. Missing: 2025 Europe",
+    "host_name": "www.netcup.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.reddit.com/r/selfhosted/comments/1q0a63q/what_is_a_cheap_vps_with_servers_in_europe_good",
+    "name": "What is a cheap vps with servers in Europe good enough for media",
+    "snippet": "netcup is cheaper … netcup says it's €3.5 netcup provides 25GB more storage and the traffic is 2TB per day. Its less than 0,5Eur / month. CHEAP VPS - Reddit Any VPS in the EU for under 2$ monthly? - Reddit More results from www.reddit.com",
+    "host_name": "www.reddit.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://netcupvoucher.com/blog/netcup-vs-hetzner-after-rampocalypse-2026",
+    "name": "Netcup vs Hetzner After the RAMpocalypse - Updated 2026",
+    "snippet": "New Price, €10.36/mo, ~€12.49/mo ; CPU, 4 dedicated (EPYC 9645), 8 shared (throttled) ; RAM, 8 GB DDR5 ECC, 16 GB ; Storage, 256 GB NVMe, 160 GB ...",
+    "host_name": "netcupvoucher.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://webhosting.today/2026/05/12/the-cheap-vps-era-is-over-ai-hardware-demand-repriced-the-market",
+    "name": "The End of Cheap VPS Hosting - webhosting.today",
+    "snippet": "Projected RAM price increase by end of 2026 vs September 2025: +250% to +300% (OVHcloud, citing supplier projections). TrendForce projects no meaningful ...",
+    "host_name": "webhosting.today",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://vps-prices.com/provider/netcup",
+    "name": "Provider: netcup - VPS Prices",
+    "snippet": "The following VPS plans for netcup ・ 80TB ≈ $4.62 USD ・ 1× 128GB SSD 80TB ≈ $5.51 USD ・ ≈ $7.92 USD ・ 80TB ≈ $30.44 USD",
+    "host_name": "vps-prices.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://vpslocate.com/guides/cheapest-vps-europe-2026.html",
+    "name": "Cheapest VPS in Europe (2026) — Pricing Compared | VPSLocate",
+    "snippet": "Most RAM per dollar. Netcup — from €3.99/mo (2 vCPU, 4GB, Nuremberg). Netcup VPS 1000 G11: €3.99/mo — 2 vCPU, 4GB, 128GB SSD, Check Netcup and ...",
+    "host_name": "vpslocate.com",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://rafftechnologies.com/learn/compare/raff-vs-netcup",
+    "name": "Netcup Alternative 2026: Pricing, Performance & Features",
+    "snippet": "$9.99/mo with no setup fee, Netcup is cheaper at the 4 GB RAM tier. Netcup VPS 500 G12 gives 4 GB RAM and 128 GB NVMe at about $6.81/mo on a 12 ...",
+    "host_name": "rafftechnologies.com",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://dev.to/sst21/top-3-cheap-vps-providers-in-2025-that-ive-actually-used-1b2k",
+    "name": "Top 3 Cheap VPS Providers in 2025 (That I've Actually Used)",
+    "snippet": "Their cheapest plan is $4.99/month and includes 2 vCPUs, 4GB DDR5 RAM, 50GB NVMe SSD, and unmetered bandwidth. Their cheapest ARM VPS is $7.59/ ...",
+    "host_name": "dev.to",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  }
+]

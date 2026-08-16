@@ -1,0 +1,47 @@
+[
+  {
+    "url": "https://doc.oec.sh/how-to/add-custom-domain",
+    "name": "Add Custom Domain - OEC.SH Documentation",
+    "snippet": "After deployment, check the domain status SSL provisioning takes 1-5 minutes. DNS changes can take 5-30 minutes (sometimes up to 48 hours).\nUse your own domain (like erp.yourcompany.com) instead of the default OEC.SH subdomain. Plan Required: Pro or higher",
+    "host_name": "doc.oec.sh",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.namecheap.com/domains/registration/gtld/app",
+    "name": "app Domain Registration | Buy a .app New gTLD for $10.98 - Namecheap",
+    "snippet": "Register your .app for $10.98. This New gTLD is perfect for Technology websites and opened for General Availability on May 8, 2018. Missing: oec. | Show results with: oec.",
+    "host_name": "www.namecheap.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://oecfiber.com/wp-content/uploads/WorkPass-Mobile_App-Manual_Update-1.pdf",
+    "name": "[PDF] Mobile App Manual - OEC Fiber",
+    "snippet": "Admins can approve (whitelist) domains or IP addresses* that have been blocked by Content access, Online protection or Adblocking. Up to 20 entries in",
+    "host_name": "oecfiber.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://play.google.com/store/apps/details?id=com.oecfiber.smarthome&hl=en_US",
+    "name": "OEC Fiber - Apps on Google Play",
+    "snippet": "Free · Android OEC Fiber allows subscribers to secure and take control of their home Wi-Fi network. Secure your home with app features such as network security, SSID and ...",
+    "host_name": "play.google.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://ice.domains/app",
+    "name": "Register .app Domains - ice.domains",
+    "snippet": "Yes, .app domains are open for registration worldwide. Some country-code extensions may require local presence.",
+    "host_name": "ice.domains",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  }
+]

@@ -1,0 +1,93 @@
+// ============================================
+// Security Auto-Block API — Auto-block IPs detected by proxy.ts
+// Called by proxy.ts when suspicious/critical paths are accessed
+// POST: Create or update a BlockedIP record (auto-block)
+// ============================================
+
+import { NextRequest, NextResponse } from "next/server"
+import { requirePlatformOwner } from "@/lib/auth"
+
+// P0-03 FIX: Added platform owner authentication
+import { db } from "@/lib/db"
+
+export async function POST(request: NextRequest) {
+  const auth = requirePlatformOwner(request)
+  if (!auth.success) return auth.response
+
+  try {
+    const body = await request.json()
+    const { ip, reason, path, attemptDetail } = body
+
+    if (!ip) {
+      return NextResponse.json({ error: "IP address is required" }, { status: 400 })
+    }
+
+    // Check if IP is already blocked
+    const existing = await db.blockedIP.findUnique({ where: { ip } })
+
+    if (existing && existing.isActive) {
+      // Update existing block — increment request count
+      const updated = await db.blockedIP.update({
+        where: { ip },
+        data: {
+          requestCount: existing.requestCount + 1,
+          updatedAt: new Date(),
+          attemptDetail: attemptDetail || existing.attemptDetail,
+          path: path || existing.path,
+        },
+      })
+      return NextResponse.json({ blocked: updated, message: "IP already blocked — count updated" })
+    }
+
+    if (existing && !existing.isActive) {
+      // Re-block previously unblocked IP
+      const reblocked = await db.blockedIP.update({
+        where: { ip },
+        data: {
+          isActive: true,
+          autoBlocked: true,
+          reason: reason || "Auto-blocked: suspicious activity",
+          path: path || null,
+          attemptDetail: attemptDetail || null,
+          requestCount: existing.requestCount + 1,
+          unblockedAt: null,
+          updatedAt: new Date(),
+        },
+      })
+      return NextResponse.json({ blocked: reblocked, message: "IP re-blocked automatically" })
+    }
+
+    // Create new auto-block record
+    const blocked = await db.blockedIP.create({
+      data: {
+        ip,
+        reason: reason || "Auto-blocked: suspicious activity",
+        autoBlocked: true,
+        isActive: true,
+        path: path || null,
+        attemptDetail: attemptDetail || null,
+        requestCount: 1,
+      },
+    })
+
+    // Also log this blocking event
+    await db.securityLog.create({
+      data: {
+        ip,
+        path: path || "/unknown",
+        method: "AUTO_BLOCK",
+        statusCode: 403,
+        userAgent: request.headers.get("user-agent") || "",
+        referer: request.headers.get("referer") || "",
+        isSuspicious: true,
+        reason: reason || "Auto-blocked",
+        blocked: true,
+      },
+    })
+
+    return NextResponse.json({ blocked, message: "IP auto-blocked successfully" })
+  } catch (error) {
+    console.error("[Security Auto-Block] Error:", error)
+    return NextResponse.json({ error: "Failed to auto-block IP" }, { status: 500 })
+  }
+}

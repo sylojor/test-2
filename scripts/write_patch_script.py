@@ -1,0 +1,158 @@
+#!/usr/bin/env python3
+"""Replace generateSmartReply in talk-panel.tsx with specialization-aware version"""
+import base64
+import subprocess
+
+SSH_CMD = "/home/z/my-project/scripts/ssh_cmd.py"
+
+NEW_FUNCTION = '''function generateSmartReply(
+  userMessage: string,
+  employee: IEmployee,
+  company: ICompany | null,
+): string {
+  const dialect = company?.dialect ?? "levantine"
+  const lower = userMessage.toLowerCase()
+  const spec = employee.specialization || "عام"
+  const name = employee.name
+  const role = employee.role || "موظف"
+
+  // Check if request is within employee specialization
+  const specKeywords: Record<string, string[]> = {
+    accounting: ["محاسبة", "مالية", "فاتورة", "budget", "financial", "tax"],
+    programming: ["برمجة", "كود", "تطبيق", "code", "app", "software", "development"],
+    marketing: ["تسويق", "إعلان", "campaign", "advertising", "brand", "social media"],
+    design: ["تصميم", "شعار", "design", "logo", "UI", "UX", "graphic"],
+    sales: ["بيع", "مبيعات", "sales", "customer", "deal"],
+    hr: ["موظف", "توظيف", "employee", "hiring", "salary", "HR"],
+    customer_service: ["خدمة", "دعم", "support", "service", "complaint"],
+    management: ["إدارة", "قيادة", "management", "strategy", "planning"],
+    legal: ["قانون", "عقد", "legal", "contract", "compliance"],
+    operations: ["عمليات", "logistics", "operations", "supply", "inventory"],
+  }
+
+  let isWithinSpec = false
+  for (const [category, keywords] of Object.entries(specKeywords)) {
+    if (spec.toLowerCase().includes(category) && keywords.some(k => lower.includes(k.toLowerCase()))) {
+      isWithinSpec = true
+      break
+    }
+  }
+
+  // Thank/appreciation responses
+  if (lower.includes("شكر") || lower.includes("ممتاز") || lower.includes("أحسنت") || lower.includes("thanks") || lower.includes("great")) {
+    const replies: Record<string, string> = {
+      levantine: "تسلم! دايماً بالخدمة. لو بدك شي ثاني قولي.",
+      egyptian: "شكراً ليك! دايماً في الخدمة. لو عايز حاجة تاني قولي.",
+      gulf: "الله يعافيك! دايمًا بالخدمة.",
+      formal: "شكراً لك! دائماً في الخدمة.",
+      english: "You're welcome! Always here to help.",
+    }
+    return replies[dialect] ?? replies.levantine
+  }
+
+  // Greeting responses with specialization info
+  if (lower.includes("مرحب") || lower.includes("هلا") || lower.includes("أهل") || lower.includes("hi") || lower.includes("hello")) {
+    const replies: Record<string, string> = {
+      levantine: `أهلاً! أنا ${name}، ${role} — تخصصي ${spec}. شو بدك أساعدك فيه؟`,
+      egyptian: `أهلاً بيك! أنا ${name}، ${role} — تخصصي ${spec}. إيه اللي محتاجه؟`,
+      gulf: `حياك الله! أنا ${name}، ${role} — تخصصي ${spec}. وش تحتاج؟`,
+      formal: `مرحبًا! أنا ${name}، ${role} — تخصصي ${spec}. كيف يمكنني مساعدتك؟`,
+      english: `Hi! I'm ${name}, the ${role} — specializing in ${spec}. How can I help?`,
+    }
+    return replies[dialect] ?? replies.levantine
+  }
+
+  // OUT OF SPECIALIZATION - redirect to appropriate department
+  if (!isWithinSpec && spec !== "عام" && spec !== "general") {
+    const replies: Record<string, string> = {
+      levantine: `أنا ${name}، تخصصي ${spec}. هذا الطلب خارج نطاق تخصصي. بنصحك تتواصل مع القسم المناسب.`,
+      egyptian: `أنا ${name}، تخصصي ${spec}. الطلب ده خارج مجالي. أنصحك تتواصل مع القسم المناسب.`,
+      gulf: `أنا ${name}، تخصصي ${spec}. هذا الطلب خارج تخصصي. أنصحك تتواصل مع القسم المناسب.`,
+      formal: `أنا ${name}، تخصصي ${spec}. هذا الطلب خارج نطاق تخصصي. أنصح بالتواصل مع القسم المناسب.`,
+      english: `I'm ${name}, specializing in ${spec}. This request is outside my area. I recommend reaching out to the relevant department.`,
+    }
+    return replies[dialect] ?? replies.levantine
+  }
+
+  // WITHIN SPECIALIZATION - provide expertise-based response
+  const roleReplies: Record<string, Record<string, string>> = {
+    levantine: {
+      default: `فهمت طلبك! أنا ${name}، ${role} — تخصصي ${spec}. بشتغل عليه فوراً حسب خبرتي. لو بدك تفاصيل أكتر، أنا جاهز.`,
+      project: `أنا ${name} (${spec}) — بقدر أساعدك بتخطيط المشروع وتنفيذه حسب تخصصي. شو تفاصيل المشروع؟`,
+      problem: `بحلل المشكلة من منظور ${spec} وبقدم حل مقترح. أنا ${name} — جاهز أساعد.`,
+    },
+    egyptian: {
+      default: `فهمت طلبك! أنا ${name}، ${role} — تخصصي ${spec}. هشتغل عليه فوراً حسب خبرتي. لو عايز حاجة تاني أنا جاهز.`,
+      project: `أنا ${name} (${spec}) — هساعدك في تخطيط المشروع وتنفيذه. إيه تفاصيل المشروع؟`,
+      problem: `هحلل المشكلة من منظور ${spec} وهقدم حل. أنا ${name} — جاهز أساعد.`,
+    },
+    gulf: {
+      default: `فهمت طلبك! أنا ${name}، ${role} — تخصصي ${spec}. بشتغل عليه فوراً حسب خبرتي. لو تبي شي ثاني أنا جاهز.`,
+      project: `أنا ${name} (${spec}) — بساعدك في تخطيط وتنفيذ المشروع. وش تفاصيل المشروع؟`,
+      problem: `بحلل المشكلة من منظور ${spec} وبقدم حل مقترح. أنا ${name} — جاهز أساعد.`,
+    },
+    formal: {
+      default: `فهمت طلبك! أنا ${name}، ${role} — تخصصي ${spec}. سأعمل عليه فوراً حسب خبرتي. إذا احتجت أي شيء آخر أنا جاهز.`,
+      project: `أنا ${name} (${spec}) — يمكنني مساعدتك في تخطيط وتنفيذ المشروع. ما هي تفاصيل المشروع؟`,
+      problem: `سأحلل المشكلة من منظور ${spec} وأقدم حل مقترح. أنا ${name} — جاهز للمساعدة.`,
+    },
+    english: {
+      default: `Got your request! I'm ${name}, the ${role} — specializing in ${spec}. I'll work on it right away based on my expertise. Let me know if you need anything else.`,
+      project: `I'm ${name} (${spec}) — I can help with project planning and execution. What are the project details?`,
+      problem: `I'll analyze the issue from my ${spec} perspective and propose a solution. I'm ${name} — ready to help.`,
+    },
+  }
+
+  const dialectReplies = roleReplies[dialect] ?? roleReplies.levantine
+
+  // Contextual matching
+  if (lower.includes("مشروع") || lower.includes("project")) return dialectReplies.project ?? dialectReplies.default
+  if (lower.includes("مشكلة") || lower.includes("عطل") || lower.includes("problem") || lower.includes("issue")) return dialectReplies.problem ?? dialectReplies.default
+
+  return dialectReplies.default
+}'''
+
+# Write the Python replacement script
+script_content = '''
+import sys
+
+with open('src/components/dashboard/talk-panel.tsx', 'r') as f:
+    content = f.read()
+
+new_fn = """''' + NEW_FUNCTION.replace('"', '\\"') + '''"""
+
+start_marker = 'function generateSmartReply('
+start_idx = content.find(start_marker)
+if start_idx == -1:
+    print('ERROR: Could not find generateSmartReply function')
+    sys.exit(1)
+
+# Find end of function by tracking braces
+brace_count = 0
+fn_end = -1
+for i in range(start_idx, len(content)):
+    if content[i] == '{':
+        brace_count += 1
+    elif content[i] == '}':
+        brace_count -= 1
+        if brace_count == 0:
+            fn_end = i + 1
+            break
+
+if fn_end == -1:
+    print('ERROR: Could not find function end')
+    sys.exit(1)
+
+content = content[:start_idx] + new_fn + content[fn_end:]
+
+with open('src/components/dashboard/talk-panel.tsx', 'w') as f:
+    f.write(content)
+
+print(f'talk-panel.tsx updated ({len(content)} bytes)')
+'''
+
+# Write the script to a local file
+with open('/home/z/my-project/scripts/patch_talk_panel.py', 'w') as f:
+    f.write(script_content)
+
+print("Script written to /home/z/my-project/scripts/patch_talk_panel.py")
