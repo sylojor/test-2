@@ -30,7 +30,7 @@ echo "Ready! Starting production server..."
 exec node server.js &
 
 # --- 6. Start invoice reminder cron (every hour) ---
-CRON_SECRET=${CRON_SECRET:?CRON_SECRET must be set}
+CRON_SECRET=${CRON_SECRET:-}
 echo "Starting invoice reminder cron (every hour)..."
 while true; do
   sleep 3600
