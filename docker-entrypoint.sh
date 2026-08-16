@@ -1,5 +1,5 @@
 #!/bin/sh
-set -e
+# set -e  # disabled for production resilience
 
 echo "BlivoAI — Starting..."
 
@@ -23,7 +23,7 @@ node /app/node_modules/prisma/build/index.js db seed 2>/dev/null || {
 }
 
 # --- 4. Create data directories ---
-mkdir -p /app/data /app/data/uploads /app/data/branding /app/uploads /app/public/uploads
+mkdir -p 2>/dev/null || true && mkdir -p /app/data /app/data/uploads /app/data/branding /app/uploads /app/public/uploads
 
 # --- 5. Start server ---
 echo "Ready! Starting production server..."
