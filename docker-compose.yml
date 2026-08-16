@@ -31,9 +31,6 @@ services:
     env_file:
       - .env
     environment:
-      # DATABASE_URL is constructed from POSTGRES_* vars for the db service.
-      # Override in .env if connecting to an external database.
-      - DATABASE_URL=${DATABASE_URL:-postgresql://${POSTGRES_USER:-blivoai}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-blivoai}?schema=public}
       - NODE_ENV=production
       - PORT=3001
     ports:
