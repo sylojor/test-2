@@ -27,6 +27,20 @@ export async function GET(
 
     const { id } = await params
 
+    // Security: Verify conversation belongs to user's company
+    const userCompanyId = authPayload.companyId || authPayload.ownedCompany?.id
+    if (!userCompanyId) {
+      return NextResponse.json({ error: "No company association" }, { status: 403 })
+    }
+
+    const conversation = await db.conversation.findUnique({
+      where: { id },
+      select: { companyId: true },
+    })
+    if (!conversation || conversation.companyId !== userCompanyId) {
+      return NextResponse.json({ error: "Conversation not found" }, { status: 404 })
+    }
+
     const messages = await db.message.findMany({
       where: { conversationId: id },
       orderBy: { createdAt: "asc" },

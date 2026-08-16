@@ -9,10 +9,11 @@ node /app/node_modules/prisma/build/index.js generate || {
   echo "Prisma generate failed, trying db push directly..."
 }
 
-# --- 2. Sync database schema ---
-echo "Syncing database schema..."
-node /app/node_modules/prisma/build/index.js db push --accept-data-loss 2>/dev/null || {
-  echo "Warning: db push failed — database may already be set up"
+# --- 2. Apply pending migrations (safe — no data loss) ---
+echo "Applying database migrations..."
+node /app/node_modules/prisma/build/index.js migrate deploy 2>/dev/null || {
+  echo "Warning: migrate deploy failed — database may need initial setup"
+  echo "If this is a fresh install, run: npx prisma migrate deploy --schema /app/prisma/schema.prisma"
 }
 
 # --- 3. Seed admin user ---
@@ -29,7 +30,7 @@ echo "Ready! Starting production server..."
 exec node server.js &
 
 # --- 6. Start invoice reminder cron (every hour) ---
-CRON_SECRET=${CRON_SECRET:-blivoai-cron-2024}
+CRON_SECRET=${CRON_SECRET:?CRON_SECRET must be set}
 echo "Starting invoice reminder cron (every hour)..."
 while true; do
   sleep 3600

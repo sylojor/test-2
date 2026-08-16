@@ -1,6 +1,6 @@
 # ============================================
-# Dockerfile — BlivoAI Demo
-# Apple-inspired design, PostgreSQL, Next.js standalone
+# Dockerfile — BlivoAI Production
+# Multi-stage build, non-root, health checks
 # ============================================
 
 FROM node:20-alpine AS base
@@ -10,12 +10,13 @@ FROM base AS deps
 RUN apk add --no-cache libc6-compat openssl
 WORKDIR /app
 
-COPY package.json package-lock.json* bun.lock* ./
+COPY package.json package-lock.json* ./
 COPY prisma ./prisma
 RUN npm install
 
 # --- Build stage ---
 FROM base AS builder
+RUN apk add --no-cache libc6-compat openssl
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
@@ -34,35 +35,46 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
-RUN apk add --no-cache openssl git python3 make g++
+# Install only runtime system dependencies
+RUN apk add --no-cache openssl tini
+
+# Create non-root user for security
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nextjs
 
 # Copy standalone build
 COPY --from=builder /app/.next/standalone ./
 
-# Copy static and public
+# Copy static and public assets
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
 
-# Copy Prisma (needed at runtime)
-COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
-COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
-COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
-COPY --from=builder /app/node_modules/bcryptjs ./node_modules/bcryptjs
-# Copy all other needed runtime modules
-COPY --from=builder /app/node_modules ./node_modules
+# Copy Prisma (needed at runtime for migrations)
+COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma ./node_modules/@prisma
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/prisma ./node_modules/prisma
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/bcryptjs ./node_modules/bcryptjs
 
 # Copy entrypoint
 COPY --from=builder /app/docker-entrypoint.sh ./docker-entrypoint.sh
 RUN chmod +x ./docker-entrypoint.sh
 
-# Create storage directories
-RUN mkdir -p /app/data /app/data/uploads /app/data/branding /app/uploads
+# Create storage directories with correct ownership
+RUN mkdir -p /app/data /app/data/uploads /app/data/branding /app/uploads && \
+    chown -R nextjs:nodejs /app/data /app/uploads
+
+# Switch to non-root user
+USER nextjs
 
 EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-# PORT can be overridden by env var (e.g. PORT=3001 for demo)
+# Health check — Caddy uses this
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+  CMD wget -qO- http://localhost:${PORT:-3000}/api/route || exit 1
 
-ENTRYPOINT ["./docker-entrypoint.sh"]
+# Use tini as PID 1 for proper signal handling
+ENTRYPOINT ["tini", "--"]
+CMD ["./docker-entrypoint.sh"]

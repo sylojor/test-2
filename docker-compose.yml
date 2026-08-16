@@ -16,6 +16,8 @@ services:
       retries: 5
     networks:
       - internal
+    security_opt:
+      - no-new-privileges:true
 
   app:
     build:
@@ -27,9 +29,9 @@ services:
       db:
         condition: service_healthy
     environment:
-      - DATABASE_URL=postgresql://USER:PASSWORD@db:5432/blivoai?schema=public
+      - DATABASE_URL=${DATABASE_URL:?DATABASE_URL must be set}
       - NODE_ENV=production
-      - JWT_SECRET=${JWT_SECRET:-blivoai-demo-secret-2024-change-in-production}
+      - JWT_SECRET=${JWT_SECRET:?JWT_SECRET must be set}
       - LLM_PROVIDER=${LLM_PROVIDER:-mock}
       - LLM_API_KEY=${LLM_API_KEY:-}
       - LLM_API_URL=${LLM_API_URL:-}
@@ -38,12 +40,13 @@ services:
       - LLM_MODEL_HEAVY=${LLM_MODEL_HEAVY:-}
       - NEXT_PUBLIC_SITE_URL=https://blivoai.com
       - NEXTAUTH_URL=https://blivoai.com
-      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET:-blivoai-demo-secret}
-      - GOOGLE_CLIENT_ID=107821695568-db4p0elttllbol3q5eg3650q4qbukod2.apps.googleusercontent.com
-      - RESEND_API_KEY=YOUR_RESEND_API_KEY
-      - CRON_SECRET=${CRON_SECRET:-blivoai-cron-2024}
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET:?NEXTAUTH_SECRET must be set}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:?GOOGLE_CLIENT_ID must be set}
+      - RESEND_API_KEY=${RESEND_API_KEY:-}
+      - CRON_SECRET=${CRON_SECRET:?CRON_SECRET must be set}
       - DODO_API_KEY=${DODO_API_KEY:-}
       - DODO_WEBHOOK_SECRET=${DODO_WEBHOOK_SECRET:-}
+      # NOTE: Set DODO_WEBHOOK_SECRET for webhook signature verification. Without it, webhooks are rejected.
       - DODO_API_BASE_URL=${DODO_API_BASE_URL:-https://live.dodopayments.com}
       - DODO_IS_LIVE=${DODO_IS_LIVE:-true}
       - NEXT_PUBLIC_GOOGLE_CLIENT_ID=${NEXT_PUBLIC_GOOGLE_CLIENT_ID:-}
@@ -54,10 +57,12 @@ services:
       - demo-uploads:/app/uploads
       - demo-chatbot-data:/app/data
     ports:
-      - "3001:3001"
+      - "127.0.0.1:3001:3001"
     networks:
       - internal
       - proxy
+    security_opt:
+      - no-new-privileges:true
 
   caddy:
     image: caddy:2-alpine
@@ -65,7 +70,6 @@ services:
     restart: unless-stopped
     depends_on:
       - app
-      - support-app
     ports:
       - "80:80"
       - "443:443"
@@ -76,23 +80,25 @@ services:
     networks:
       - proxy
 
-  support-app:
-    build:
-      context: ./support-blivo
-      dockerfile: Dockerfile
-    container_name: support-blivo
-    restart: unless-stopped
-    depends_on:
-      db:
-        condition: service_healthy
-    environment:
-      - DATABASE_URL=postgresql://USER:PASSWORD@db:5432/blivoai?schema=public
-      - NODE_ENV=production
-      - JWT_SECRET=YOUR_JWT_SECRET
-      - PORT=3002
-    networks:
-      - internal
-      - proxy
+  # NOTE: support-app requires ./support-blivo directory with its own Dockerfile
+  # Uncomment this service block if support-blivo is present
+  # support-app:
+  #   build:
+  #     context: ./support-blivo
+  #     dockerfile: Dockerfile
+  #   container_name: support-blivo
+  #   restart: unless-stopped
+  #   depends_on:
+  #     db:
+  #       condition: service_healthy
+  #   environment:
+  #     - DATABASE_URL=${DATABASE_URL:?DATABASE_URL must be set}
+  #     - NODE_ENV=production
+  #     - JWT_SECRET=${JWT_SECRET:?JWT_SECRET must be set}
+  #     - PORT=3002
+  #   networks:
+  #     - internal
+  #     - proxy
 
 volumes:
   demo-postgres-data:

@@ -1,3 +1,4 @@
+import { verifyAuth, unauthorizedResponse } from "@/lib/auth"
 // ============================================
 // API: Verify Payment Status
 // GET /api/payments/verify?sessionId=xxx
@@ -16,6 +17,12 @@ export async function GET(request: NextRequest) {
     const apiKey = process.env.DODO_API_KEY
     if (!apiKey) {
       return NextResponse.json({ error: "Payment not configured" }, { status: 503 })
+    }
+
+    // Auth check — only authenticated users can verify payments
+    const authPayload = verifyAuth(request)
+    if (!authPayload) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
     const dodoBase = process.env.DODO_API_BASE_URL || "https://live.dodopayments.com"

@@ -23,11 +23,13 @@ export async function GET(
 
     const { id } = await params
     
+    // Security: Verify employee belongs to user's company
+    const userCompanyId = authPayload.companyId || authPayload.ownedCompany?.id
     const employee = await db.employee.findUnique({
       where: { id },
       include: {
         company: {
-          select: { name: true, dialect: true, tone: true },
+          select: { id: true, name: true, dialect: true, tone: true },
         },
         decisions: {
           orderBy: { createdAt: "desc" },

@@ -7,7 +7,14 @@ import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/db"
 import { sendInvoiceEmail, sendSubscriptionExpiringEmail } from "@/lib/email-service"
 
-const CRON_SECRET = process.env.CRON_SECRET || "blivoai-cron-2024"
+const CRON_SECRET = process.env.CRON_SECRET
+if (!CRON_SECRET) {
+  console.error("[CRITICAL] CRON_SECRET not set — cron endpoints disabled")
+}
+
+// Rate limiting: max 1 execution per 55 minutes
+let lastCronExecution = 0
+const CRON_MIN_INTERVAL_MS = 55 * 60 * 1000
 
 function formatDate(date: Date, lang: string): string {
   return date.toLocaleDateString(lang === "ar" ? "ar-SA" : "en-US", {
@@ -20,16 +27,23 @@ function formatDate(date: Date, lang: string): string {
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
-    if (searchParams.get("secret") !== CRON_SECRET) {
+    // Rate limit check
+    const now = Date.now()
+    if (now - lastCronExecution < CRON_MIN_INTERVAL_MS) {
+      return NextResponse.json({ error: "Cron rate limited" }, { status: 429 })
+    }
+    lastCronExecution = now
+
+    if (!CRON_SECRET || searchParams.get("secret") !== CRON_SECRET) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const now = new Date()
+    const nowDate = new Date()
     const results = { sent48h: 0, sent24h: 0, sentExpired: 0, errors: [] as string[] }
 
     // 48 ساعة قبل الاستحقاق
-    const h48 = new Date(now.getTime() + 48 * 60 * 60 * 1000)
-    const h47 = new Date(now.getTime() + 47 * 60 * 60 * 1000)
+    const h48 = new Date(nowDate.getTime() + 48 * 60 * 60 * 1000)
+    const h47 = new Date(nowDate.getTime() + 47 * 60 * 60 * 1000)
     const invoices48h = await db.invoice.findMany({
       where: { status: "PENDING", reminder48hSent: false, dueDate: { gte: h47, lte: h48 } },
       include: { user: true, company: true },
@@ -51,8 +65,8 @@ export async function GET(request: NextRequest) {
     }
 
     // 24 ساعة قبل الاستحقاق
-    const h24 = new Date(now.getTime() + 24 * 60 * 60 * 1000)
-    const h23 = new Date(now.getTime() + 23 * 60 * 60 * 1000)
+    const h24 = new Date(nowDate.getTime() + 24 * 60 * 60 * 1000)
+    const h23 = new Date(nowDate.getTime() + 23 * 60 * 60 * 1000)
     const invoices24h = await db.invoice.findMany({
       where: { status: "PENDING", reminder24hSent: false, dueDate: { gte: h23, lte: h24 } },
       include: { user: true, company: true },
@@ -75,7 +89,7 @@ export async function GET(request: NextRequest) {
 
     // فواتير منتهية
     const expired = await db.invoice.findMany({
-      where: { status: "PENDING", reminderExpiredSent: false, dueDate: { lt: now } },
+      where: { status: "PENDING", reminderExpiredSent: false, dueDate: { lt: nowDate } },
     })
     for (const inv of expired) {
       await db.invoice.update({ where: { id: inv.id }, data: { status: "OVERDUE", reminderExpiredSent: true } })

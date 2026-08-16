@@ -13,10 +13,14 @@ export async function POST(request: NextRequest) {
     // Get the raw body for signature verification
     const rawBody = await request.text()
     const signature = request.headers.get("x-dodo-signature") || ""
-    const webhookSecret = process.env.DODO_WEBHOOK_SECRET || ""
+    const webhookSecret = process.env.DODO_WEBHOOK_SECRET
 
-    // Verify webhook signature (skip if secret not set — for testing)
-    if (webhookSecret && !verifyDodoWebhook(rawBody, signature, webhookSecret)) {
+    // Verify webhook signature — required in production
+    if (!webhookSecret) {
+      console.error("[DODO_WEBHOOK] DODO_WEBHOOK_SECRET not set — rejecting webhook")
+      return NextResponse.json({ error: "Webhook not configured" }, { status: 503 })
+    }
+    if (!verifyDodoWebhook(rawBody, signature, webhookSecret)) {
       console.error("[DODO_WEBHOOK] Invalid signature — possible forged request")
       return NextResponse.json({ error: "Invalid signature" }, { status: 401 })
     }
@@ -45,11 +49,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Health check — GET returns 200 so Dodo knows the endpoint exists
+// GET is not supported on webhook endpoint — POST only
 export async function GET() {
-  return NextResponse.json({
-    status: "active",
-    message: "Dodo Payments webhook endpoint is ready",
-    timestamp: new Date().toISOString(),
-  })
+  return NextResponse.json({ error: "Method not allowed" }, { status: 405 })
 }

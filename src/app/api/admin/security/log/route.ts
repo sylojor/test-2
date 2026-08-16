@@ -8,7 +8,16 @@ import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/db"
 
 export async function POST(request: NextRequest) {
-  try {
+  // Security: This endpoint is internal-only (called by proxy.ts)
+// Reject requests from external IPs
+const clientIp = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
+  || request.headers.get("x-real-ip")?.trim()
+  || "unknown"
+if (clientIp !== "127.0.0.1" && clientIp !== "::1" && clientIp !== "unknown") {
+  return NextResponse.json({ error: "Internal only" }, { status: 403 })
+}
+
+try {
     const body = await request.json()
     const { ip, path, method, statusCode, userAgent, referer, isSuspicious, reason, blocked } = body
 

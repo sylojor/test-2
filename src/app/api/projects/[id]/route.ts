@@ -21,8 +21,10 @@ export async function PATCH(
     const body = await request.json()
     const { name, description, status, priority, deadline } = body
 
-    const project = await db.project.findUnique({ where: { id } })
-    if (!project) {
+    // Security: Verify project belongs to user's company
+    const userCompanyId = authPayload.companyId || authPayload.ownedCompany?.id
+    const project = await db.project.findUnique({ where: { id }, select: { companyId: true } })
+    if (!project || (userCompanyId && project.companyId !== userCompanyId)) {
       return NextResponse.json({ error: "المشروع غير موجود" }, { status: 404 })
     }
 
