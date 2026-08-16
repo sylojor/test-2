@@ -47,7 +47,7 @@ COPY --from=builder /app/.next/standalone ./
 
 # Copy static and public assets
 COPY --from=builder /app/.next/static ./.next/static
-COPY --from=builder /app/public ./public
+COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 
 # Copy Prisma (needed at runtime for migrations)
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
