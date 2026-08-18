@@ -29,7 +29,7 @@ import {
   Zap, ArrowRight, Check, Star, ChevronDown, ChevronUp,
   Cpu, Briefcase, Headphones, Palette, TrendingUp,
   Globe2, Clock, Eye, Heart, Menu, Brain, Code, DollarSign,
-  Sparkles, Crown, Coins, Loader2
+  Sparkles, Crown, Coins, Loader2, Play
 } from "lucide-react"
 
 interface LandingPageProps {
@@ -129,6 +129,7 @@ const PLAN_ICONS: Record<string, typeof Sparkles> = {
 export function LandingPage({ onGetStarted, onLogin }: LandingPageProps) {
   const language = useLocale()
   const isRTL = language === "ar"
+  const demoUrl = `https://demo.blivoai.com/${language}`
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [dbPlans, setDbPlans] = useState<PlanFromDB[]>([])
 
@@ -249,6 +250,15 @@ export function LandingPage({ onGetStarted, onLogin }: LandingPageProps) {
             >
               {t("landing.cta.login", language)}
             </Button>
+            <a
+              href={demoUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-sm font-medium px-3 py-2 rounded-lg border border-brand/30 text-brand hover:bg-brand/10 transition-all min-h-[44px]"
+            >
+              <Play className="w-3.5 h-3.5" />
+              {language === "ar" ? "تجربة العرض" : "Try Demo"}
+            </a>
             <Button
               onClick={onGetStarted}
               className="bg-brand hover:bg-brand-dark text-brand-foreground shadow-sm min-h-[44px]"
@@ -320,6 +330,17 @@ export function LandingPage({ onGetStarted, onLogin }: LandingPageProps) {
                     {t("landing.cta.login", language)}
                   </Button>
 
+                  <a
+                    href={demoUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="inline-flex items-center gap-2 text-brand border border-brand/30 hover:bg-brand/10 rounded-lg px-4 py-3 text-base font-medium min-h-[44px] transition-all"
+                  >
+                    <Play className="w-4 h-4" />
+                    {language === "ar" ? "تجربة العرض" : "Try Demo"}
+                  </a>
+
                   <Button
                     onClick={() => { onGetStarted(); setMobileMenuOpen(false) }}
                     className="bg-brand hover:bg-brand-dark text-brand-foreground shadow-sm min-h-[44px] text-base"
@@ -367,10 +388,19 @@ export function LandingPage({ onGetStarted, onLogin }: LandingPageProps) {
               {t("landing.cta.start", language)}
               <ArrowRight className="w-4 sm:w-5 h-4 sm:h-5 ml-2" />
             </Button>
-            <span className="text-muted-foreground/70 text-sm">
-              {t("landing.cta.pricingNote", language)}
-            </span>
+            <a
+              href={demoUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 border border-brand/30 text-brand hover:bg-brand/10 rounded-xl text-base sm:text-lg px-6 sm:px-8 h-12 sm:h-12 font-medium min-h-[44px] min-w-[44px] transition-all"
+            >
+              <Play className="w-4 sm:w-5 h-4 sm:h-5" />
+              {language === "ar" ? "تجربة العرض التجريبي" : "Try the Live Demo"}
+            </a>
           </div>
+          <p className="text-muted-foreground/70 text-sm text-center mt-3">
+            {t("landing.cta.pricingNote", language)}
+          </p>
         </FadeInSection>
       </section>
 
@@ -837,6 +867,23 @@ export function LandingPage({ onGetStarted, onLogin }: LandingPageProps) {
               </div>
             </Card>
           </FadeInSection>
+
+          <FadeInSection delay={400}>
+            <div className="text-center mt-8 sm:mt-10">
+              <a
+                href={demoUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 bg-brand hover:bg-brand-dark text-brand-foreground text-base sm:text-lg px-6 sm:px-8 h-12 sm:h-12 rounded-xl shadow-sm font-medium min-h-[44px] min-w-[44px] transition-all"
+              >
+                <Play className="w-4 sm:w-5 h-4 sm:h-5" />
+                {language === "ar" ? "جرب المنصة بنفسك" : "Try the Live Demo"}
+              </a>
+              <p className="text-muted-foreground text-xs sm:text-sm mt-3">
+                {language === "ar" ? "استعرض لوحة التحكم والشات ببيانات تجريبية حقيقية" : "Explore the dashboard and chat with real sample data"}
+              </p>
+            </div>
+          </FadeInSection>
         </div>
       </section>
 
@@ -881,14 +928,25 @@ export function LandingPage({ onGetStarted, onLogin }: LandingPageProps) {
           <FadeInSection>
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 sm:mb-6">{t("landing.cta.readyTitle", language)}</h2>
             <p className="text-muted-foreground mb-8 sm:mb-10 text-base sm:text-lg">{t("landing.cta.readyDesc", language)}</p>
-            <Button
-              onClick={onGetStarted}
-              size="lg"
-              className="bg-brand hover:bg-brand-dark text-brand-foreground text-base sm:text-lg px-6 sm:px-8 h-12 sm:h-12 rounded-xl shadow-sm min-h-[44px] min-w-[44px]"
-            >
-              {t("landing.cta.start", language)}
-              <ArrowRight className="w-4 sm:w-5 h-4 sm:h-5 ml-2" />
-            </Button>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
+              <Button
+                onClick={onGetStarted}
+                size="lg"
+                className="bg-brand hover:bg-brand-dark text-brand-foreground text-base sm:text-lg px-6 sm:px-8 h-12 sm:h-12 rounded-xl shadow-sm min-h-[44px] min-w-[44px]"
+              >
+                {t("landing.cta.start", language)}
+                <ArrowRight className="w-4 sm:w-5 h-4 sm:h-5 ml-2" />
+              </Button>
+              <a
+                href={demoUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 border border-brand/30 text-brand hover:bg-brand/10 rounded-xl text-base sm:text-lg px-6 sm:px-8 h-12 sm:h-12 font-medium min-h-[44px] min-w-[44px] transition-all"
+              >
+                <Play className="w-4 sm:w-5 h-4 sm:h-5" />
+                {language === "ar" ? "تجربة العرض التجريبي" : "Try the Live Demo"}
+              </a>
+            </div>
           </FadeInSection>
         </div>
       </section>

@@ -26,19 +26,28 @@ const DEMO_READONLY_MSG: Record<string, string> = {
 
 function DemoBanner({ lang }: { lang: Locale }) {
   const isAr = lang === "ar"
+  const signupUrl = `https://blivoai.com/${lang}/signup?source=demo`
   return (
-    <div className="bg-amber-500/10 border-b border-amber-500/20 px-4 py-2.5 relative z-50">
-      <div className="flex items-center justify-center gap-2 max-w-7xl mx-auto">
+    <div className="bg-amber-500/10 border-b border-amber-500/20 px-4 py-2 relative z-50">
+      <div className="flex items-center justify-center gap-2 sm:gap-3 max-w-7xl mx-auto flex-wrap">
         <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse flex-shrink-0" />
         <p className="text-amber-700 dark:text-amber-300 text-xs sm:text-sm font-medium">
-          {isAr ? "\u0648\u0636\u0639 \u0627\u0644\u0639\u0631\u0636 \u0627\u0644\u062a\u062c\u0631\u064a\u0628\u064a" : "Demo Mode"}
-          <span className="mx-2 text-amber-500/50">|</span>
-          <span className="font-normal text-amber-600 dark:text-amber-400">
+          {isAr
+            ? "\u0623\u0646\u062a \u0627\u0644\u0622\u0646 \u062a\u0633\u062a\u0639\u0631\u0636 \u0627\u0644\u0646\u0633\u062e\u0629 \u0627\u0644\u062a\u062c\u0631\u064a\u0628\u064a\u0629 \u0645\u0646 BlivoAI"
+            : "You\u2019re viewing the BlivoAI Demo"}
+          <span className="mx-1.5 sm:mx-2 text-amber-500/50 hidden sm:inline">|</span>
+          <span className="font-normal text-amber-600 dark:text-amber-400 hidden sm:inline">
             {isAr
-              ? "\u0627\u0644\u0628\u064a\u0627\u0646\u0627\u062a \u062a\u062c\u0631\u064a\u0628\u064a\u0629 \u0648\u0627\u0644\u0639\u0645\u0644\u064a\u0627\u062a \u063a\u064a\u0631 \u0642\u0627\u0628\u0644\u0629 \u0644\u0644\u062a\u0646\u0641\u064a\u0630"
-              : "Sample data \u2014 actions are not executed"}
+              ? "\u0623\u0646\u0634\u0626 \u062d\u0633\u0627\u0628\u0643 \u0644\u0644\u0628\u062f\u0621 \u0628\u0627\u0633\u062a\u062e\u062f\u0627\u0645 \u0627\u0644\u0645\u0646\u0635\u0629 \u0627\u0644\u0641\u0639\u0644\u064a\u0629"
+              : "Create your account to start using the real platform"}
           </span>
         </p>
+        <a
+          href={signupUrl}
+          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-amber-500/20 hover:bg-amber-500/30 text-amber-700 dark:text-amber-300 text-xs sm:text-sm font-medium transition-colors flex-shrink-0"
+        >
+          {isAr ? "\u0623\u0646\u0634\u0626 \u062d\u0633\u0627\u0628\u0643" : "Create Account"}
+        </a>
       </div>
     </div>
   )
@@ -140,7 +149,8 @@ export function DemoPage({ lang }: DemoPageProps) {
               <span className="text-muted-foreground text-xs hidden sm:inline">Demo User</span>
               <ThemeToggle />
               <button onClick={handleLangChange} className="text-muted-foreground hover:text-foreground text-xs px-1.5 py-1 rounded-lg hover:bg-muted transition-all min-h-[44px] min-w-[44px] flex items-center justify-center font-medium">{isAr ? "EN" : "\u0639"}</button>
-              <a href={isAr ? "/ar?signup=true" : "/en?signup=true"} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-gradient-to-r from-emerald-600 to-emerald-500 text-white text-xs font-medium hover:from-emerald-500 hover:to-emerald-400 transition-all min-h-[44px]">{isAr ? "\u0623\u0646\u0634\u0626 \u0645\u0633\u0627\u062d\u062a\u0643" : "Create Workspace"}</a>
+              <a href={`https://blivoai.com/${lang}/pricing?source=demo`} className="inline-flex items-center px-2 py-1.5 rounded-lg border border-brand/30 text-brand text-xs font-medium hover:bg-brand/10 transition-all min-h-[44px]">{isAr ? "\u0627\u0644\u0627\u0634\u062a\u0631\u0627\u0643" : "Subscribe"}</a>
+              <a href={`https://blivoai.com/${lang}/signup?source=demo`} className="inline-flex items-center px-2.5 py-1.5 rounded-lg bg-brand text-brand-foreground text-xs font-medium hover:bg-brand/90 transition-all min-h-[44px]">{isAr ? "\u0623\u0646\u0634\u0626 \u062d\u0633\u0627\u0628\u0643" : "Create Account"}</a>
             </div>
           </div>
           {/* Mobile header */}
