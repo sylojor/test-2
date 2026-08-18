@@ -380,25 +380,19 @@ export function getEmployeeStatusDisplay(status: string): string {
   return map[status] ?? status
 }
 
-export function getApprovalModeDisplay(mode: string): string {
-  const map: Record<string, string> = {
+export function getApprovalModeDisplay(mode: string, language?: string): string {
+  const isAr = language === "ar"
+  const mapAr: Record<string, string> = {
     ALWAYS_APPROVE: "كل قرار يحتاج موافقة",
     AUTO_WITH_NOTIFY: "يتصرف لوحده مع إشعار",
     AUTO_SILENT: "يتصرف لوحده بدون إشعار",
   }
-  return map[mode] ?? mode
-}
-
-export function getEmployeeStatusColor(status: string): string {
-  const map: Record<string, string> = {
-    SETUP: "bg-yellow-100 text-yellow-800",
-    ACTIVE: "bg-green-100 text-green-800",
-    PAUSED: "bg-gray-100 text-gray-800",
-    AWAITING_APPROVAL: "bg-orange-100 text-orange-800",
-    REPLACED: "bg-blue-100 text-blue-800",
-    DELETED: "bg-red-100 text-red-800",
+  const mapEn: Record<string, string> = {
+    ALWAYS_APPROVE: "Requires approval for every decision",
+    AUTO_WITH_NOTIFY: "Acts autonomously with notification",
+    AUTO_SILENT: "Acts autonomously silently",
   }
-  return map[status] ?? "bg-gray-100 text-gray-800"
+  return (isAr ? mapAr : mapEn)[mode] ?? mode
 }
 
 export function getProjectStatusDisplay(status: string): string {

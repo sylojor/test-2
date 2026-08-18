@@ -131,7 +131,7 @@ export function EmployeesPanel({ employees, departments, onUpdateEmployeeDepartm
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">{t("setupEmployee.approvalMode", language)}</span>
-                    <span className="text-foreground">{getApprovalModeDisplay(emp.approvalMode)}</span>
+                    <span className="text-foreground">{getApprovalModeDisplay(emp.approvalMode, language)}</span>
                   </div>
                   
                   {/* القسم */}

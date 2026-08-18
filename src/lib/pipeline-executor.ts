@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { RequestType } from "@/types"
 // ============================================
 // نظام التمرير التلقائي بين الأقسام (Pipeline Executor)
@@ -298,7 +297,7 @@ async function generatePipelineStepsWithLLM(
         { role: "system", content: "أنت نظام إدارة أعمال ذكي. أجب بصيغة JSON فقط." },
         { role: "user", content: prompt },
       ],
-      requestType: "ANALYSIS" as any,
+      requestType: "ANALYSIS" as RequestType,
     },
     "system",
     "pipeline-generator",
@@ -432,7 +431,7 @@ export async function createPipelineInDB(
     await db.workOrder.update({
       where: { id: workOrderId },
       data: {
-        warnings: JSON.parse(JSON.stringify(warnings)) as any,
+        warnings: JSON.parse(JSON.stringify(warnings)) as string[],
       },
     })
   }

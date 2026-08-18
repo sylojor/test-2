@@ -15,7 +15,7 @@ export const DEMO_COMPANY: ICompany = {
   logoUrl: "/logo-v2.png",
   ownerId: "demo-user",
   subscription: "PROFESSIONAL",
-  tokenBudgetMonthly: 500000,
+  tokenBudgetMonthly: 15000000,
   tokenUsedMonthly: 127450,
   tokenBudgetResetAt: new Date(Date.now() + 15 * 86400000),
   tokenAddOnsPurchased: 0,

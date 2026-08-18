@@ -94,7 +94,7 @@ export function OverviewPanel({ company, employees, departments, projects }: Ove
             <CardContent className="space-y-3">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-foreground font-semibold text-lg">{planInfo.nameAr}</p>
+                  <p className="text-foreground font-semibold text-lg">{language === "ar" ? planInfo.nameAr : planInfo.name}</p>
                   <p className="text-muted-foreground text-xs">{planInfo.priceDisplay}</p>
                 </div>
                 <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-600/20 dark:text-emerald-400 border-emerald-300 dark:border-emerald-800/30">
