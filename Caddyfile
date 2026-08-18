@@ -9,10 +9,27 @@ Disallow: /
 ` 200
 
     @notrobots not path /robots.txt
-    header @notrobots Location "https://blivoai.com{uri}"
     header @notrobots X-Robots-Tag "noindex, nofollow"
-    respond @notrobots "" 301
+
+    @dangerous {
+        path /.env /.env.* /.git
+    }
+    respond @dangerous 403
+
+    reverse_proxy blivo-app:3001 {
+        header_up Host {host}
+        header_up X-Real-IP {remote_host}
+        header_down -X-Powered-By
+        header_down -Server
+        flush_interval -1
+        transport http {
+            keepalive 30s
+            keepalive_idle_conns 100
+        }
+    }
 }
+
+
 
 blivoai.com {
     @dangerous {

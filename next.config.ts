@@ -4,6 +4,15 @@ const nextConfig: NextConfig = {
   output: "standalone",
   serverExternalPackages: ["z-ai-web-dev-sdk", "fs", "path", "sharp"],
   reactStrictMode: false,
+  async rewrites() {
+    return [
+      {
+        source: "/:path((?!demo/).*)",
+        has: [{ type: "host", value: "demo.blivoai.com" }],
+        destination: "/demo/:path",
+      },
+    ];
+  },
   async headers() {
     return [
       {
