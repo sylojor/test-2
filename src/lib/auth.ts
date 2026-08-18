@@ -46,10 +46,15 @@ interface RateLimitEntry {
 }
 
 const rateLimitStore = new Map<string, RateLimitEntry>()
-const AUTH_RATE_LIMIT = {
-  maxAttempts: 10,
-  windowMs: 15 * 60 * 1000,
-  blockDurationMs: 30 * 60 * 1000,
+// Endpoint-specific rate limits (separate counters per endpoint)
+const AUTH_RATE_LIMITS: Record<string, { maxAttempts: number; windowMs: number; blockDurationMs: number }> = {
+  register:      { maxAttempts: 5,  windowMs: 15 * 60 * 1000, blockDurationMs: 15 * 60 * 1000 },
+  login:         { maxAttempts: 10, windowMs: 15 * 60 * 1000, blockDurationMs: 15 * 60 * 1000 },
+  "verify-email":{ maxAttempts: 10, windowMs: 15 * 60 * 1000, blockDurationMs: 10 * 60 * 1000 },
+  "resend-verify":{ maxAttempts: 3, windowMs: 15 * 60 * 1000, blockDurationMs: 10 * 60 * 1000 },
+  "forgot-password":{ maxAttempts: 3, windowMs: 60 * 60 * 1000, blockDurationMs: 30 * 60 * 1000 },
+  "reset-password":{ maxAttempts: 5, windowMs: 60 * 60 * 1000, blockDurationMs: 30 * 60 * 1000 },
+  default:       { maxAttempts: 10, windowMs: 15 * 60 * 1000, blockDurationMs: 15 * 60 * 1000 },
 }
 
 // --- إعدادات API Rate Limiting ---
@@ -211,14 +216,16 @@ export function requirePlatformOwner(request: Request): AdminAuthResult {
 // Rate Limiting للمصادقة
 // ============================================
 
-export function checkAuthRateLimit(identifier: string): { allowed: boolean; retryAfterMs?: number } {
+export function checkAuthRateLimit(identifier: string, endpoint: string = "default"): { allowed: boolean; retryAfterMs?: number } {
   const now = Date.now()
-  const entry = rateLimitStore.get(identifier)
+  const key = `${endpoint}:${identifier}`
+  const limits = AUTH_RATE_LIMITS[endpoint] || AUTH_RATE_LIMITS["default"]
+  const entry = rateLimitStore.get(key)
 
   if (!entry || now > entry.resetAt) {
-    rateLimitStore.set(identifier, {
+    rateLimitStore.set(key, {
       count: 1,
-      resetAt: now + AUTH_RATE_LIMIT.windowMs,
+      resetAt: now + limits.windowMs,
       blocked: false,
     })
     return { allowed: true }
@@ -231,9 +238,9 @@ export function checkAuthRateLimit(identifier: string): { allowed: boolean; retr
 
   entry.count++
 
-  if (entry.count > AUTH_RATE_LIMIT.maxAttempts) {
+  if (entry.count > limits.maxAttempts) {
     entry.blocked = true
-    entry.resetAt = now + AUTH_RATE_LIMIT.blockDurationMs
+    entry.resetAt = now + limits.blockDurationMs
     return { allowed: false, retryAfterMs: AUTH_RATE_LIMIT.blockDurationMs }
   }
 

@@ -293,13 +293,24 @@ export async function sendToLLM(
     }
   }
 
-  // 3. فحص هل في ميزانية توكنات
+  // 3. فحص هل في ميزانية توكنات — ENFORCED
   const { canConsumeTokens } = await import("@/lib/token-manager")
   const canConsume = await canConsumeTokens(companyId, 500)
   if (!canConsume && config.provider !== "mock" && config.provider !== "zai") {
-    // لو ما في ميزانية → نستخدم Together AI عادي بس نسجل تحذير
-    // لا نرجع لـ mock أبداً — المستخدم يستحق رد ذكي حقيقي
-    console.warn(`[LLM] Token budget low for company ${companyId}, but proceeding with real LLM call`)
+    console.warn(`[LLM] Token budget exhausted for company ${companyId} — rejecting request`)
+    return {
+      content: getDialectReply("formal", {
+        formal: "عذراً، نفدت ميزانية التوكنات الخاصة بشركتك. يرجى التواصل مع الإدارة لشحن توكنات إضافية أو ترقية اشتراكك.",
+        english: "Sorry, your company's token budget has been exhausted. Please contact your administrator to purchase additional tokens or upgrade your subscription.",
+        levantine: "", egyptian: "", gulf: "",
+      }),
+      tokensIn: 0,
+      tokensOut: 0,
+      modelTier,
+      cached: false,
+      estimatedCost: 0,
+      budgetExceeded: true,
+    }
   }
 
   // 4. تلخيص المحادثة لو طويلة
@@ -489,8 +500,8 @@ async function openAICompatibleCall(
       "Authorization": `Bearer ${config.apiKey}`,
       "Content-Type": "application/json",
       ...(config.provider === "openrouter" ? {
-        "HTTP-Referer": "https://one-employer.company",
-        "X-Title": "One Employer Company",
+        "HTTP-Referer": "https://blivoai.com",
+        "X-Title: BlivoAI",
       } : {}),
     },
     body: JSON.stringify({
@@ -876,8 +887,8 @@ export async function testLLMConnection(provider: LLMProvider, apiKey: string, b
         "Authorization": `Bearer ${apiKey}`,
         "Content-Type": "application/json",
         ...(provider === "openrouter" ? {
-          "HTTP-Referer": "https://one-employer.company",
-          "X-Title": "One Employer Company",
+          "HTTP-Referer": "https://blivoai.com",
+          "X-Title: BlivoAI",
         } : {}),
       },
       body: JSON.stringify({
@@ -1557,8 +1568,8 @@ async function callLLMWithTools(
       "Authorization": `Bearer ${config.apiKey}`,
       "Content-Type": "application/json",
       ...(config.provider === "openrouter" ? {
-        "HTTP-Referer": "https://one-employer.company",
-        "X-Title": "One Employer Company",
+        "HTTP-Referer": "https://blivoai.com",
+        "X-Title: BlivoAI",
       } : {}),
     },
     body: JSON.stringify(requestBody),

@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
     const { name, email, password } = body
     const clientIp = getClientIp(request)
 
-    const rateLimit = checkAuthRateLimit(clientIp)
+    const rateLimit = checkAuthRateLimit(clientIp, "register")
     if (!rateLimit.allowed) {
       return NextResponse.json({ error: err(errors.rateLimit) }, { status: 429 })
     }

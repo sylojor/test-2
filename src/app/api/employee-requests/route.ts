@@ -1,4 +1,3 @@
-// @ts-nocheck
 // ============================================
 // API: Employee Requests from Manager
 // GET: List company requests

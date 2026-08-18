@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
   const err = (msg: { ar: string; en: string }) => msg[lang]
   const clientIp = getClientIp(request)
 
-  const rateLimit = checkAuthRateLimit(clientIp)
+  const rateLimit = checkAuthRateLimit(clientIp, "resend-verify")
   if (!rateLimit.allowed) {
     return NextResponse.json({ error: err(errors.rateLimit) }, { status: 429 })
   }

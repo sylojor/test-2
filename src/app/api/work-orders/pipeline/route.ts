@@ -19,10 +19,17 @@ export async function POST(request: NextRequest) {
       return unauthorizedResponse()
     }
 
-    const body = await request.json()
-    const { workOrderId, companyId, title, description, action } = body
+    // IDOR FIX: Verify company ownership — use auth payload, not client-supplied ID
+    const authCompanyId = authPayload.companyId || authPayload.ownedCompany?.id
+    if (!authCompanyId) {
+      return NextResponse.json({ error: "لا توجد شركة مرتبطة" }, { status: 403 })
+    }
 
-    if (!workOrderId || !companyId) {
+    const body = await request.json()
+    const { workOrderId, title, description, action } = body
+    const companyId = authCompanyId // Always use authenticated company ID
+
+    if (!workOrderId) {
       return NextResponse.json({ error: "workOrderId و companyId مطلوبين" }, { status: 400 })
     }
 

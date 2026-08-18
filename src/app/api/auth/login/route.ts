@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Login API — Security-hardened
 // Password verified BEFORE email verification (prevents user enumeration)
 // Rate limiting for brute-force protection
@@ -15,7 +14,7 @@ export async function POST(request: NextRequest) {
     const { email, password } = body
     const clientIp = getClientIp(request)
 
-    const rateLimit = checkAuthRateLimit(clientIp)
+    const rateLimit = checkAuthRateLimit(clientIp, "login")
     if (!rateLimit.allowed) {
       return NextResponse.json(
         { error: "RATE_LIMITED", retryAfter: Math.ceil((rateLimit.retryAfterMs || 0) / 1000) },
