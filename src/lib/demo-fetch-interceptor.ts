@@ -84,7 +84,7 @@ export function createDemoFetchInterceptor(): (input: RequestInfo | URL, init?: 
         return wo ? jsonResponse(wo) : jsonResponse({ error: "Not found" }, 404)
       }
 
-      // Meetings
+      // Meetings — panel expects { meetings: [...] } with scheduledAt, departmentIds as JSON string, participantIds as JSON string
       if (pathname === "/api/meetings") {
         return jsonResponse({ meetings: DEMO_MOCK_MEETINGS })
       }
@@ -94,26 +94,35 @@ export function createDemoFetchInterceptor(): (input: RequestInfo | URL, init?: 
         return jsonResponse({ requests: [], policies: DEMO_MOCK_HR_POLICIES, leaves: DEMO_MOCK_LEAVES })
       }
 
-      // Token Budget
+      // Token Budget — panel expects { budget: {...}, plans: {...} }
       if (pathname === "/api/token-budget") {
         const companyId = getQueryParam(search, "companyId") || "demo-co"
-        return jsonResponse({
+        const budget = {
           companyId,
-          monthlyBudget: DEMO_COMPANY.tokenBudgetMonthly,
-          monthlyUsed: DEMO_COMPANY.tokenUsedMonthly,
+          subscription: DEMO_COMPANY.subscription,
+          monthly: DEMO_COMPANY.tokenBudgetMonthly,
+          used: DEMO_COMPANY.tokenUsedMonthly,
+          percentUsed: DEMO_COMPANY.tokenUsedMonthly / DEMO_COMPANY.tokenBudgetMonthly,
+          remaining: DEMO_COMPANY.tokenBudgetMonthly - DEMO_COMPANY.tokenUsedMonthly,
+          alertLevel: "normal" as const,
           addOnsPurchased: DEMO_COMPANY.tokenAddOnsPurchased,
+          addOnsRemaining: 0,
           addOnsUsed: DEMO_COMPANY.tokenAddOnsUsed,
+          canOperate: true,
           resetAt: DEMO_COMPANY.tokenBudgetResetAt,
           dailyUsage: DEMO_MOCK_DAILY_USAGE,
-        })
+          byDepartment: { "dept-eng": Math.floor(DEMO_COMPANY.tokenUsedMonthly * 0.5), "dept-mkt": Math.floor(DEMO_COMPANY.tokenUsedMonthly * 0.2), "dept-sales": Math.floor(DEMO_COMPANY.tokenUsedMonthly * 0.1), "dept-cs": Math.floor(DEMO_COMPANY.tokenUsedMonthly * 0.1), "dept-hr": Math.floor(DEMO_COMPANY.tokenUsedMonthly * 0.1) },
+          byEmployee: {},
+        }
+        return jsonResponse({ budget, plans: {} })
       }
 
-      // Invoices
+      // Invoices — panel expects { invoices, total, page, limit } with proper fields
       if (pathname === "/api/invoices") {
-        return jsonResponse({ invoices: DEMO_MOCK_INVOICES })
+        return jsonResponse({ invoices: DEMO_MOCK_INVOICES, total: DEMO_MOCK_INVOICES.length, page: 1, limit: 20 })
       }
 
-      // API Keys
+      // API Keys — panel expects { keys: [...] } with full key fields
       if (pathname === "/api/api-keys") {
         return jsonResponse({ keys: DEMO_MOCK_API_KEYS })
       }
@@ -217,10 +226,20 @@ export function createDemoFetchInterceptor(): (input: RequestInfo | URL, init?: 
       })
     }
 
-    // Conversations - create or send message
+    // Conversations - create new conversation or send message
     if (pathname === "/api/conversations") {
       const body = init?.body ? JSON.parse(init.body as string) : {}
-      // If it's a send message (has conversationId), return mock reply
+      // If it's a send message (has employeeId + message, no conversationId), return mock reply
+      if (body.employeeId && body.message && !body.conversationId) {
+        const { getDemoChatResponse } = await import("./demo-data")
+        const reply = getDemoChatResponse(body.message, _lang as Locale)
+        return jsonResponse({
+          reply,
+          content: reply,
+          tokensUsed: { totalTokens: Math.floor(Math.random() * 500 + 200) },
+        })
+      }
+      // If it has conversationId, return mock reply
       if (body.conversationId) {
         const { getDemoChatResponse } = await import("./demo-data")
         const reply = getDemoChatResponse(body.content || body.message || "", _lang as Locale)
@@ -233,7 +252,7 @@ export function createDemoFetchInterceptor(): (input: RequestInfo | URL, init?: 
           createdAt: new Date().toISOString(),
         })
       }
-      // Creating new conversation
+      // Creating new conversation (no message)
       return jsonResponse({
         id: DEMO_CONV_ID,
         type: "DIRECT",
@@ -285,13 +304,16 @@ export const DEMO_MOCK_MEETINGS = [
     companyId: "demo-co",
     title: _lang === "ar" ? "اجتماع مراجعة المشروع" : "Project Review Meeting",
     description: _lang === "ar" ? "مراجعة تقدم المشاريع الحالية" : "Review current project progress",
-    date: new Date(Date.now() + 2 * 86400000).toISOString(),
+    scheduledAt: new Date(Date.now() + 2 * 86400000).toISOString(),
     duration: 45,
-    participants: ["emp-sarah", "emp-omar", "emp-maya"],
+    departmentIds: JSON.stringify(["dept-eng"]),
+    participantIds: JSON.stringify(["emp-sarah", "emp-omar", "emp-maya"]),
     status: "SCHEDULED",
+    type: "TEAM",
     meetingLink: null,
     notes: "",
     createdById: DEMO_USER_ID,
+    createdByName: "Demo User",
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   },
@@ -300,13 +322,16 @@ export const DEMO_MOCK_MEETINGS = [
     companyId: "demo-co",
     title: _lang === "ar" ? "متابعة فريق الهندسة" : "Engineering Team Sync",
     description: _lang === "ar" ? "متابعة المهام الأسبوعية" : "Weekly task follow-up",
-    date: new Date(Date.now() + 5 * 86400000).toISOString(),
+    scheduledAt: new Date(Date.now() + 5 * 86400000).toISOString(),
     duration: 30,
-    participants: ["emp-sarah", "emp-lina", "emp-adam", "emp-alex"],
+    departmentIds: JSON.stringify(["dept-eng"]),
+    participantIds: JSON.stringify(["emp-sarah", "emp-lina", "emp-adam", "emp-alex"]),
     status: "SCHEDULED",
+    type: "TEAM",
     meetingLink: null,
     notes: "",
     createdById: DEMO_USER_ID,
+    createdByName: "Demo User",
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   },
@@ -354,25 +379,31 @@ export const DEMO_MOCK_DAILY_USAGE = Array.from({ length: 14 }, (_, i) => ({
 export const DEMO_MOCK_INVOICES = [
   {
     id: "inv-1",
+    invoiceNumber: "INV-2026-008",
     companyId: "demo-co",
     amount: 49.99,
     currency: "USD",
     status: "PAID",
-    plan: "PROFESSIONAL",
+    planName: "Professional",
     description: _lang === "ar" ? "اشتراك شهري - أغسطس" : "Monthly subscription - August",
-    createdAt: new Date(Date.now() - 15 * 86400000).toISOString(),
+    issuedAt: new Date(Date.now() - 15 * 86400000).toISOString(),
+    dueDate: new Date(Date.now() - 10 * 86400000).toISOString(),
     paidAt: new Date(Date.now() - 14 * 86400000).toISOString(),
+    createdAt: new Date(Date.now() - 15 * 86400000).toISOString(),
   },
   {
     id: "inv-2",
+    invoiceNumber: "INV-2026-007",
     companyId: "demo-co",
     amount: 49.99,
     currency: "USD",
     status: "PAID",
-    plan: "PROFESSIONAL",
+    planName: "Professional",
     description: _lang === "ar" ? "اشتراك شهري - يوليو" : "Monthly subscription - July",
-    createdAt: new Date(Date.now() - 45 * 86400000).toISOString(),
+    issuedAt: new Date(Date.now() - 45 * 86400000).toISOString(),
+    dueDate: new Date(Date.now() - 40 * 86400000).toISOString(),
     paidAt: new Date(Date.now() - 44 * 86400000).toISOString(),
+    createdAt: new Date(Date.now() - 45 * 86400000).toISOString(),
   },
 ]
 
@@ -381,9 +412,17 @@ export const DEMO_MOCK_API_KEYS = [
     id: "key-1",
     companyId: "demo-co",
     name: _lang === "ar" ? "مفتاح الاختبار" : "Test Key",
-    key: "demo_sk_" + "*".repeat(32),
+    keyPrefix: "demo_sk_...",
+    scopes: ["read", "write"],
+    rateLimitRpm: 60,
+    totalRequests: 1247,
+    totalTokensUsed: 89420,
+    todayRequests: 23,
+    todayTokens: 1540,
+    lastUsedAt: new Date(Date.now() - 2 * 86400000).toISOString(),
+    isActive: true,
+    expiresAt: new Date(Date.now() + 180 * 86400000).toISOString(),
     createdAt: new Date(Date.now() - 30 * 86400000).toISOString(),
-    lastUsed: new Date(Date.now() - 2 * 86400000).toISOString(),
   },
 ]
 

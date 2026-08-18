@@ -59,8 +59,10 @@ export function DemoPage({ lang }: DemoPageProps) {
     setDemoLang(lang)
     hydrate()
     installDemoFetchInterceptor()
+    // Set store values needed by some panels (API keys, billing)
+    ;(useDashboardStore.setState as any)({ activeCompanyId: company.id, subscription: company.subscription })
     return () => { uninstallDemoFetchInterceptor() }
-  }, [lang, hydrate])
+  }, [lang, hydrate, company.id, company.subscription])
 
   // Hash-based navigation
   useEffect(() => {
