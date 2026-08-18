@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
     const requests = await db.employeeRequest.findMany({
       where: {
         employeeId: { in: employeeIds },
-        ...(status ? { status } : {}),
+        ...(status ? { status: status as any } : {}),
       },
       include: {
         employee: { select: { id: true, name: true, role: true, avatarColor: true } },

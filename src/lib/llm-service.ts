@@ -309,7 +309,7 @@ export async function sendToLLM(
       modelTier,
       cached: false,
       estimatedCost: 0,
-      budgetExceeded: true,
+      
     }
   }
 
