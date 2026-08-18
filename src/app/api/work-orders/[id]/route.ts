@@ -1,11 +1,12 @@
 // ============================================
 // API طلب عمل واحد — GET / PATCH
 // تحديث التقدم + إضافة تحديثات + إكمال مهام
+// FIXED: IDOR — Added companyId ownership check to GET and PATCH
 // ============================================
 
 import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/db"
-import { verifyAuth, unauthorizedResponse } from "@/lib/auth"
+import { verifyAuth, unauthorizedResponse, forbiddenResponse } from "@/lib/auth"
 
 // ============================================
 // GET — جلب طلب عمل واحد بتفاصيله
@@ -21,10 +22,16 @@ export async function GET(
       return unauthorizedResponse()
     }
 
+    // IDOR FIX: Verify company ownership
+    const authCompanyId = authPayload.companyId || authPayload.ownedCompany?.id
+    if (!authCompanyId) {
+      return forbiddenResponse()
+    }
+
     const { id } = await params
 
-    const workOrder = await db.workOrder.findUnique({
-      where: { id },
+    const workOrder = await db.workOrder.findFirst({
+      where: { id, companyId: authCompanyId },
       include: {
         subTasks: {
           include: {
@@ -67,13 +74,19 @@ export async function PATCH(
       return unauthorizedResponse()
     }
 
+    // IDOR FIX: Verify company ownership
+    const authCompanyId = authPayload.companyId || authPayload.ownedCompany?.id
+    if (!authCompanyId) {
+      return forbiddenResponse()
+    }
+
     const { id } = await params
     const body = await request.json()
     const { action, data } = body
 
     // --- التحقق من وجود الطلب ---
-    const existing = await db.workOrder.findUnique({
-      where: { id },
+    const existing = await db.workOrder.findFirst({
+      where: { id, companyId: authCompanyId },
       include: { subTasks: true },
     })
 

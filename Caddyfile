@@ -21,6 +21,8 @@ Disallow: /
     }
 
     # Security headers for demo
+    # TODO: Move CSP to Next.js app-level with nonce support to remove script-src unsafe-inline
+    # Current CSP at proxy level cannot use nonces - requires Next.js middleware nonce injection
     header {
         Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
         X-Content-Type-Options "nosniff"

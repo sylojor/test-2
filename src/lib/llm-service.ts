@@ -1092,8 +1092,20 @@ export async function sendToLLMWithTools(
   const { canConsumeTokens } = await import("@/lib/token-manager")
   const canConsume = await canConsumeTokens(companyId, 500)
   if (!canConsume && config.provider !== "mock" && config.provider !== "zai") {
-    // لا نرجع لـ mock أبداً — نستمر بالـ LLM الحقيقي بس نسجل تحذير
-    console.warn(`[LLM_TOOLS] Token budget low for company ${companyId}, but proceeding with real LLM call`)
+// ENFORCED: Reject when token budget exhausted
+    return {
+      content: getDialectReply("formal", {
+        formal: "عذراً، نفدت ميزانية التوكنات. يرجى التواصل مع الإدارة.",
+        english: "Sorry, your company token budget has been exhausted. Please contact your administrator.",
+        levantine: "", egyptian: "", gulf: "",
+      }),
+      tokensIn: 0,
+      tokensOut: 0,
+      toolCalls: [],
+      modelTier,
+      cached: false,
+      estimatedCost: 0,
+    }
   }
 
   // Build conversation context
