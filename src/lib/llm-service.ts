@@ -501,7 +501,7 @@ async function openAICompatibleCall(
       "Content-Type": "application/json",
       ...(config.provider === "openrouter" ? {
         "HTTP-Referer": "https://blivoai.com",
-        "X-Title: BlivoAI",
+        "X-Title": "BlivoAI",
       } : {}),
     },
     body: JSON.stringify({
@@ -888,7 +888,7 @@ export async function testLLMConnection(provider: LLMProvider, apiKey: string, b
         "Content-Type": "application/json",
         ...(provider === "openrouter" ? {
           "HTTP-Referer": "https://blivoai.com",
-          "X-Title: BlivoAI",
+          "X-Title": "BlivoAI",
         } : {}),
       },
       body: JSON.stringify({
@@ -1569,7 +1569,7 @@ async function callLLMWithTools(
       "Content-Type": "application/json",
       ...(config.provider === "openrouter" ? {
         "HTTP-Referer": "https://blivoai.com",
-        "X-Title: BlivoAI",
+        "X-Title": "BlivoAI",
       } : {}),
     },
     body: JSON.stringify(requestBody),
