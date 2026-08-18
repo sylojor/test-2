@@ -1,4 +1,3 @@
-// @ts-nocheck
 // ============================================
 // Developer API v1 — Chat Endpoint
 // POST /api/v1/chat
@@ -174,8 +173,8 @@ export async function POST(request: NextRequest) {
     })
 
     // === 9. Build System Prompt ===
-    const isEnglish = language === "en" ||
-      request.headers.get("accept-language")?.startsWith("en")
+    const isEnglish = (language === "en" ||
+      request.headers.get("accept-language")?.startsWith("en")) ?? false
 
     let systemPrompt = employee.systemPrompt || buildDefaultSystemPrompt(employee, isEnglish)
     systemPrompt += buildApiContextRules(isEnglish)

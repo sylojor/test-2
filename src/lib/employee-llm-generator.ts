@@ -1,4 +1,3 @@
-// @ts-nocheck
 // ============================================
 // توليد الموظفين بالـ LLM — سيرفر فقط
 //
@@ -148,7 +147,6 @@ Rules:
   }
 
   return {
-    name,
     role,
     personality,
     personalityTraits,

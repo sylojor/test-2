@@ -1,4 +1,3 @@
-// @ts-nocheck
 // ============================================
 // نظام الأدوات (Tools) للوكلاء الذكية
 //
@@ -506,6 +505,7 @@ export async function executeTool(
       await db.auditLog.create({
         data: {
           companyId,
+          actorType: 'EMPLOYEE',
           actorId: employeeId,
           action: `TOOL_CALL_${toolName}`,
           details: JSON.stringify({
@@ -536,6 +536,7 @@ export async function executeTool(
       await db.auditLog.create({
         data: {
           companyId,
+          actorType: 'EMPLOYEE',
           actorId: employeeId,
           action: `TOOL_CALL_${toolName}_FAILED`,
           details: JSON.stringify({
@@ -1060,6 +1061,7 @@ async function executeNotifyUser(params: Record<string, unknown>, companyId: str
     await db.auditLog.create({
       data: {
         companyId,
+        actorType: 'SYSTEM',
         actorId: userId,
         action: `NOTIFICATION_${type.toUpperCase()}`,
         details: JSON.stringify({ message, type, targetUserId: userId }),
@@ -1135,7 +1137,8 @@ async function executeManageAccount(
         const integration = await db.integration.create({
           data: {
             companyId,
-            platform: String(updateData.platform || "OTHER"),
+            platform: String(updateData.platform || "OTHER") as any,
+            accessToken: "pending_setup",
             platformUserId: String(updateData.platformUserId || ""),
             platformName: String(updateData.platformName || ""),
             scopes: String(updateData.scopes || ""),

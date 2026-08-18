@@ -121,7 +121,6 @@ export function MainContent({
     case "employees":
       return (
         <main className="flex-1 overflow-y-auto w-full">
-          {/* @ts-expect-error */}
       <EmployeesPanel
             employees={employees}
             departments={departments}
@@ -289,7 +288,6 @@ export function MainContent({
       if (detailEmployee) {
         return (
           <main className="flex-1 overflow-y-auto w-full">
-            {/* @ts-expect-error */}
       <EmployeeDetailPanel
               employee={detailEmployee}
               departments={departments}

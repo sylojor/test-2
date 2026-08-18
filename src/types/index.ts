@@ -479,6 +479,8 @@ export interface ReviewDecisionRequest {
 }
 
 export interface GenerateEmployeeResult {
+  role?: string
+  personalityTraits?: string[]
   personality: string
   systemPrompt: string
   capabilities: string[]

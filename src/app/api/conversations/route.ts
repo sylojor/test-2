@@ -37,12 +37,12 @@ export async function GET(request: NextRequest) {
       where: { companyId: userCompanyId, status: { not: "DELETED" } },
       select: { id: true },
     })
-    const employeeIds = companyEmployees.map((p: any) => p.id)
+    const employeeIds = companyEmployees.map(p => p.id)
 
     const participants = await db.conversationParticipant.findMany({
       where: {
         employeeId: { in: employeeIds },
-        ...(type && { conversation: { type } }),
+        ...(type && { conversation: { type: type as any } }),
       },
       include: {
         conversation: {
@@ -59,8 +59,8 @@ export async function GET(request: NextRequest) {
     })
 
     const seen = new Set<string>()
-    const conversations = []
-    for (const p of participants) {
+    const conversations: any[] = []
+    for (const p of participants as any[]) {
       if (!seen.has(p.conversationId)) {
         seen.add(p.conversationId)
         conversations.push(p.conversation)

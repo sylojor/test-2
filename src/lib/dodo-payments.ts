@@ -1,4 +1,3 @@
-// @ts-nocheck
 // ============================================
 // Dodo Payments Integration
 // Handles: checkout creation, webhook verification,
@@ -280,7 +279,7 @@ export async function handleDodoWebhookEvent(event: {
         
         // Create payment record (idempotency check)
         try {
-          const existingPayment = await db.payment.findUnique({
+          const existingPayment = await db.payment.findFirst({
             where: { providerPaymentId: data.id as string },
           })
           if (existingPayment) {
@@ -340,7 +339,7 @@ export async function handleDodoWebhookEvent(event: {
               provider: "dodo",
               providerPaymentId: data.id as string,
               type: "SUBSCRIPTION",
-              targetPlan: (data.metadata?.targetPlan as string) || null,
+              targetPlan: ((data.metadata as any)?.targetPlan as string) || null,
               metadata: JSON.stringify(data.metadata || {}),
             },
           })
