@@ -19,6 +19,7 @@ import { isLLMConnected, sendToLLM } from "@/lib/llm-service"
 // لو الـ LLM مش مربوط → بيستخدم التوليد المحلي (القوالب)
 // ============================================
 export async function generateEmployeeWithLLM(
+  name: string,
   role: string,
   dialect: Dialect,
   tone: Tone,
@@ -47,6 +48,7 @@ export async function generateEmployeeWithLLM(
 // وبيقترح قدرات ناقصة المدير ممكن نسيها
 // ============================================
 async function generateEmployeeViaLLM(
+  name: string,
   role: string,
   dialect: Dialect,
   tone: Tone,
