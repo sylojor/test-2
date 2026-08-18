@@ -13,7 +13,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/db"
 import { sendToLLMWithTools } from "@/lib/llm-service"
 import { canConsumeTokens } from "@/lib/token-manager"
-import { verifyAuth, unauthorizedResponse } from "@/lib/auth"
+import { verifyAuth, unauthorizedResponse, forbiddenResponse } from "@/lib/auth"
 import type { LLMMessage } from "@/types"
 
 export async function GET(request: NextRequest) {
@@ -24,17 +24,18 @@ export async function GET(request: NextRequest) {
       return unauthorizedResponse()
     }
 
+    // Security: Verify company ownership
+    const userCompanyId = authPayload.companyId || authPayload.ownedCompany?.id
+    if (!userCompanyId) {
+      return forbiddenResponse()
+    }
+
     const { searchParams } = new URL(request.url)
-    const companyId = searchParams.get("companyId")
     const type = searchParams.get("type")
     const employeeId = searchParams.get("employeeId")
 
-    if (!companyId) {
-      return NextResponse.json({ error: "معرّف الشركة مطلوب" }, { status: 400 })
-    }
-
     const companyEmployees = await db.employee.findMany({
-      where: { companyId, status: { not: "DELETED" } },
+      where: { companyId: userCompanyId, status: { not: "DELETED" } },
       select: { id: true },
     })
     const employeeIds = companyEmployees.map((p: any) => (p: any) => e => e.id)

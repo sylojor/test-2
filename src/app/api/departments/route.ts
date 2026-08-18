@@ -1,33 +1,39 @@
 // ============================================
-// API: إدارة الأقسام (Departments)
-// POST: إنشاء قسم جديد (مع حدود الاشتراك)
-// GET: جلب أقسام الشركة
+// API: Departments Management
+// POST: Create new department (with subscription limits)
+// GET: List company departments
+// Security: All operations verify company ownership via auth token
 // ============================================
 
 import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/db"
 import { getPlanFromDB } from "@/lib/plan-db"
-import { verifyAuth, unauthorizedResponse } from "@/lib/auth"
+import { verifyAuth, unauthorizedResponse, forbiddenResponse, getUserCompanyId } from "@/lib/auth"
 import type { SubscriptionPlan } from "@/types"
 
 // GET /api/departments?companyId=xxx
 export async function GET(request: NextRequest) {
   try {
-    // === Authentication Check ===
     const authPayload = verifyAuth(request)
     if (!authPayload) {
       return unauthorizedResponse()
     }
 
-    const { searchParams } = new URL(request.url)
-    const companyId = searchParams.get("companyId")
+    // Security: Use authenticated user's company ID, not client-supplied
+    const userCompanyId = getUserCompanyId(authPayload)
+    if (!userCompanyId) {
+      return forbiddenResponse("لا يوجد شركة مرتبطة بحسابك")
+    }
 
-    if (!companyId) {
-      return NextResponse.json({ error: "معرّف الشركة مطلوب" }, { status: 400 })
+    // Allow query param for filtering, but enforce ownership
+    const { searchParams } = new URL(request.url)
+    const requestedCompanyId = searchParams.get("companyId")
+    if (requestedCompanyId && requestedCompanyId !== userCompanyId) {
+      return forbiddenResponse()
     }
 
     const departments = await db.department.findMany({
-      where: { companyId },
+      where: { companyId: userCompanyId },
       include: {
         employees: {
           where: { status: { not: "DELETED" } },
@@ -50,24 +56,26 @@ export async function GET(request: NextRequest) {
 // POST /api/departments
 export async function POST(request: NextRequest) {
   try {
-    // === Authentication Check ===
     const authPayload = verifyAuth(request)
     if (!authPayload) {
       return unauthorizedResponse()
     }
 
+    // Security: Derive companyId from auth, not from request body
+    const userCompanyId = getUserCompanyId(authPayload)
+    if (!userCompanyId) {
+      return forbiddenResponse("لا يوجد شركة مرتبطة بحسابك")
+    }
+
     const body = await request.json()
-    const { name, description, color, tokenBudgetPercent, companyId } = body
+    const { name, description, color, tokenBudgetPercent } = body
 
     if (!name || typeof name !== "string" || name.trim().length === 0) {
       return NextResponse.json({ error: "اسم القسم مطلوب" }, { status: 400 })
     }
 
-    if (!companyId) {
-      return NextResponse.json({ error: "معرّف الشركة مطلوب" }, { status: 400 })
-    }
+    const companyId = userCompanyId
 
-    // هل الشركة موجودة؟
     const company = await db.company.findUnique({ 
       where: { id: companyId },
       include: { departments: true },
@@ -76,12 +84,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "الشركة غير موجودة" }, { status: 404 })
     }
 
-    // --- التحقق من حدود الاشتراك ---
     const planInfo = await getPlanFromDB(company.subscription)
     if (planInfo && company.departments.length >= planInfo.maxDepartments) {
       return NextResponse.json(
         { 
-          error: `وصلت للحد الأقصى من الأقسام (${planInfo.maxDepartments}) بخطتك الحالية (${planInfo.nameAr}). بدك ترقي خطتك عشان تضيف أقسام أكتر.`,
+          error: `وصلت للحد الأقصى من الأقسام (${planInfo.maxDepartments}) بخطتك الحالية (${planInfo.nameAr}).`,
           code: "DEPARTMENT_LIMIT_REACHED",
           currentPlan: company.subscription,
           maxDepartments: planInfo.maxDepartments,
@@ -90,7 +97,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // هل في قسم بنفس الاسم؟
     const existing = await db.department.findFirst({
       where: { companyId, name: name.trim() },
     })
@@ -108,13 +114,11 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    // تحديث maxDepartments بالشركة
     await db.company.update({
       where: { id: companyId },
       data: { maxDepartments: planInfo?.maxDepartments ?? company.maxDepartments },
     })
 
-    // سجل الحدث
     await db.auditLog.create({
       data: {
         companyId,

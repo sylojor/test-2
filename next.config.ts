@@ -2,7 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   output: "standalone",
-  serverExternalPackages: ["z-ai-web-dev-sdk"],
+  serverExternalPackages: ["z-ai-web-dev-sdk", "fs", "path", "sharp"],
   reactStrictMode: false,
   async headers() {
     return [

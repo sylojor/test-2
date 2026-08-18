@@ -1,31 +1,40 @@
 // ============================================
-// API: إدارة الأقسام — قسم واحد
-// PATCH: تحديث قسم
-// DELETE: حذف قسم
+// API: Single Department Management
+// PATCH: Update department
+// DELETE: Delete department
+// Security: Verify resource belongs to authenticated user's company
 // ============================================
 
 import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/db"
-import { verifyAuth, unauthorizedResponse } from "@/lib/auth"
+import { verifyAuth, unauthorizedResponse, forbiddenResponse, getUserCompanyId } from "@/lib/auth"
 
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    // === Authentication Check ===
     const authPayload = verifyAuth(request)
     if (!authPayload) {
       return unauthorizedResponse()
+    }
+
+    const userCompanyId = getUserCompanyId(authPayload)
+    if (!userCompanyId) {
+      return forbiddenResponse()
     }
 
     const { id } = await params
     const body = await request.json()
     const { name, description, color, tokenBudgetPercent } = body
 
+    // Security: Verify department belongs to user's company
     const department = await db.department.findUnique({ where: { id } })
     if (!department) {
       return NextResponse.json({ error: "القسم غير موجود" }, { status: 404 })
+    }
+    if (department.companyId !== userCompanyId) {
+      return forbiddenResponse()
     }
 
     const updated = await db.department.update({
@@ -50,14 +59,19 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    // === Authentication Check ===
     const authPayload = verifyAuth(request)
     if (!authPayload) {
       return unauthorizedResponse()
     }
 
+    const userCompanyId = getUserCompanyId(authPayload)
+    if (!userCompanyId) {
+      return forbiddenResponse()
+    }
+
     const { id } = await params
 
+    // Security: Verify department belongs to user's company
     const department = await db.department.findUnique({
       where: { id },
       include: { employees: true },
@@ -65,8 +79,10 @@ export async function DELETE(
     if (!department) {
       return NextResponse.json({ error: "القسم غير موجود" }, { status: 404 })
     }
+    if (department.companyId !== userCompanyId) {
+      return forbiddenResponse()
+    }
 
-    // فك ربط الموظفين من القسم قبل الحذف
     if (department.employees.length > 0) {
       await db.employee.updateMany({
         where: { departmentId: id },

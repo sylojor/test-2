@@ -4,6 +4,7 @@
 // SEO metadata with hreflang
 // ============================================
 
+export const dynamicParams = false
 import type { Metadata } from "next"
 import { i18n } from "@/lib/i18n-config"
 import { FeatureDetailContent } from "./feature-detail-content"

@@ -34,32 +34,50 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
+# env files
 .env*
+!.env.example
 
 # vercel
 .vercel
 
-
 # typescript
 *.tsbuildinfo
 next-env.d.ts
-local-*
-.claude
-.z-ai-config
+
+# backups and temporary files
+*.bak
+*.bak.*
+/backups/
+*.sql.gz
+*.dump
+
+# logs
 *.log
 dev.log
 dev.out.log
+server.log
+
+# local/audit artifacts
 test
 prompt
-
-server.log
-# Skills directory
+.claude
+.z-ai-config
+local-*
 /skills/tool-results/
-# SQLite database
-*.db
-*.db-journal
 /skills/
 worklog.md
 tool-results/
 scripts/blog-admin-content-new.tsx
+
+# SQLite database
+*.db
+*.db-journal
+
+# credentials and secrets
+credentials*
+*.pem
+*.key
+*.p12
+*.pfx
+secrets/

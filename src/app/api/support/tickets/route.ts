@@ -41,10 +41,15 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json()
-    const { customerName, customerEmail, subject, description, category, priority } = body
+    const { customerName, customerEmail, subject, description, category, priority, name, email, message } = body
+
+    // Normalize field names (frontend uses name/email/message)
+    const fName = customerName || name
+    const fEmail = customerEmail || email
+    const fDesc = description || message
 
     // Validation
-    if (!customerName || !customerEmail || !subject || !description) {
+    if (!fName || !fEmail || !subject || !fDesc) {
       return NextResponse.json(
         { error: "يجب ملء جميع الحقول المطلوبة" },
         { status: 400 }
@@ -53,7 +58,7 @@ export async function POST(request: Request) {
 
     // Email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!emailRegex.test(customerEmail)) {
+    if (!emailRegex.test(fEmail)) {
       return NextResponse.json(
         { error: "بريد إلكتروني غير صالح" },
         { status: 400 }
@@ -67,7 +72,7 @@ export async function POST(request: Request) {
         { status: 400 }
       )
     }
-    if (description.length > 5000) {
+    if (fDesc.length > 5000) {
       return NextResponse.json(
         { error: "وصف التذكرة طويل جداً (الحد الأقصى 5000 حرف)" },
         { status: 400 }
@@ -80,10 +85,10 @@ export async function POST(request: Request) {
     const ticket = await prisma.supportTicket.create({
       data: {
         ticketNumber,
-        customerName: customerName.trim(),
-        customerEmail: customerEmail.trim().toLowerCase(),
+        customerName: fName.trim(),
+        customerEmail: fEmail.trim().toLowerCase(),
         subject: subject.trim(),
-        description: description.trim(),
+        description: fDesc.trim(),
         category: category || "GENERAL",
         priority: priority || "MEDIUM",
         ip,

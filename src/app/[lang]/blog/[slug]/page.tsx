@@ -26,7 +26,8 @@ export async function generateStaticParams() {
       }
     }
     return params
-  } catch {
+  } catch (error: any) {
+    if (error?.digest?.startsWith("NEXT_NOT_FOUND")) throw error
     return []
   }
 }
@@ -68,7 +69,8 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
       ogTitle = title
       ogDescription = description
     }
-  } catch {
+  } catch (error: any) {
+    if (error?.digest?.startsWith("NEXT_NOT_FOUND")) throw error
     title = isAr ? `مقال — BlivoAI` : `Article — BlivoAI`
     description = isAr ? "مقال من مدونة BlivoAI" : "Article from BlivoAI Blog"
     ogTitle = title
@@ -103,17 +105,21 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
 export default async function BlogArticlePage({ params }: { params: Promise<{ lang: string; slug: string }> }) {
   const { lang, slug } = await params
 
-  // Verify post exists
+  // Verify post exists — notFound() must be called outside try/catch
+  // to propagate correctly through Next.js error boundary
+  let postExists = false
   try {
     const post = await db.blogPost.findUnique({
       where: { slug },
       select: { status: true },
     })
-    if (!post || post.status !== "PUBLISHED") {
-      notFound()
-    }
+    postExists = !!(post && post.status === "PUBLISHED")
   } catch {
     // DB not available — let client component handle it
+  }
+
+  if (!postExists) {
+    notFound()
   }
 
   return <BlogArticleContent params={params} />

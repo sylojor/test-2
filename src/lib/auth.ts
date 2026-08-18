@@ -349,3 +349,20 @@ export function forbiddenResponse(message: string = "ليس لديك صلاحي�
     }
   )
 }
+
+
+// ============================================
+// requireUserCompanyId — Extract and verify user's company ID
+// Returns the company ID if found, or a 403 response if not.
+// ============================================
+export function getUserCompanyId(authPayload: JWTPayload): string | null {
+  return authPayload.companyId || authPayload.ownedCompany?.id || null
+}
+
+export function requireUserCompanyId(authPayload: JWTPayload): { companyId: string } | Response {
+  const companyId = getUserCompanyId(authPayload)
+  if (!companyId) {
+    return forbiddenResponse("لا يوجد شركة مرتبطة بحسابك")
+  }
+  return { companyId }
+}

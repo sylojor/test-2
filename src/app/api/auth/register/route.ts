@@ -1,24 +1,17 @@
 // ============================================
-// API: تسجيل حساب جديد (النسخة المحسّنة)
+// API: Race-safe registration with P2002 handling
 // POST /api/auth/register
-//
-// التحسينات:
-// - تشفير bcrypt لكلمات السر
-// - Rate limiting
-// - Validation محسّن
-// - رسائل خطأ ثنائية اللغة
-// - إرسال كود تفعيل 6 أرقام بالإيميل
-// - لا يتم إعطاء التوكن حتى يتم التفعيل
 // ============================================
 
 import { NextRequest, NextResponse } from "next/server"
+import { Prisma } from "@prisma/client"
 import { db } from "@/lib/db"
 import { hashPassword, checkAuthRateLimit, getClientIp } from "@/lib/auth"
 import { sendVerificationCodeEmail } from "@/lib/email-service"
 
 const errors = {
   rateLimit:   { ar: "محاولات كثيرة جداً — حاول بعد قليل", en: "Too many attempts — try again later" },
-  nameReq:     { ar: "الاسم مطلوب (حرفين على الأقل)", en: "Name is required (at least 2 characters)" },
+  nameReq:     { ar: "الاسم مطلوب (2 حروف على الأقل)", en: "Name is required (at least 2 characters)" },
   emailInv:    { ar: "البريد الإلكتروني مش صحيح", en: "Invalid email address" },
   passShort:   { ar: "كلمة السر لازم 6 حروف على الأقل", en: "Password must be at least 6 characters" },
   passLong:    { ar: "كلمة السر طويلة كتير", en: "Password is too long" },
@@ -29,8 +22,8 @@ const errors = {
 
 function getLang(request: NextRequest): "ar" | "en" {
   const lang = request.nextUrl.searchParams.get("lang")
-    || request.headers.get("x-lang")
-    || "ar"
+  || request.headers.get("x-lang")
+  || "ar"
   return lang === "en" ? "en" : "ar"
 }
 
@@ -47,13 +40,11 @@ export async function POST(request: NextRequest) {
     const { name, email, password } = body
     const clientIp = getClientIp(request)
 
-    // --- Rate Limiting ---
     const rateLimit = checkAuthRateLimit(clientIp)
     if (!rateLimit.allowed) {
       return NextResponse.json({ error: err(errors.rateLimit) }, { status: 429 })
     }
 
-    // --- Validation ---
     if (!name || typeof name !== "string" || name.trim().length < 2) {
       return NextResponse.json({ error: err(errors.nameReq) }, { status: 400 })
     }
@@ -67,54 +58,38 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: err(errors.passLong) }, { status: 400 })
     }
 
-    // --- Check if email exists ---
-    const existing = await db.user.findUnique({ where: { email: email.trim().toLowerCase() } })
-    if (existing) {
-      return NextResponse.json({ error: err(errors.emailExists) }, { status: 409 })
+    const hashedPassword = await hashPassword(password)
+    const code = generateCode()
+    const expiry = new Date(Date.now() + 10 * 60 * 1000)
+
+    // Race-safe: handle P2002 unique constraint from concurrent requests
+    let user
+    try {
+      user = await db.user.create({
+        data: {
+          name: name.trim(),
+          email: email.trim().toLowerCase(),
+          password: hashedPassword,
+          role: "ADMIN",
+          verificationCode: code,
+          verificationExpiry: expiry,
+          emailVerified: false,
+        },
+      })
+    } catch (createError: any) {
+      if (createError instanceof Prisma.PrismaClientKnownRequestError && createError.code === "P2002") {
+        return NextResponse.json({ error: err(errors.emailExists) }, { status: 409 })
+      }
+      throw createError
     }
 
-    // --- Hash password ---
-    const hashedPassword = await hashPassword(password)
-
-    // --- Generate verification code ---
-    const code = generateCode()
-    const expiry = new Date(Date.now() + 10 * 60 * 1000) // 10 minutes
-
-    // --- Create user (unverified) ---
-    const user = await db.user.create({
-      data: {
-        name: name.trim(),
-        email: email.trim().toLowerCase(),
-        password: hashedPassword,
-        role: "ADMIN",
-        verificationCode: code,
-        verificationExpiry: expiry,
-        emailVerified: false,
-      },
-    })
-
-    // --- Send verification email ---
-    const emailSent = await sendVerificationCodeEmail(
-      user.email,
-      user.name,
-      code,
-      lang,
-    )
-
+    const emailSent = await sendVerificationCodeEmail(user.email, user.name, code, lang)
     if (!emailSent) {
-      // Still create the user but warn about email
       console.error("[REGISTER] Failed to send verification email to", user.email)
     }
 
-    // Return user data WITHOUT token — user must verify first
     return NextResponse.json({
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        emailVerified: false,
-      },
+      user: { id: user.id, name: user.name, email: user.email, role: user.role, emailVerified: false },
       requiresVerification: true,
     }, { status: 201 })
 
