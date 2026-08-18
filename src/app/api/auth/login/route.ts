@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
         logoUrl: user.ownedCompany.logoUrl, ownerId: user.ownedCompany.ownerId,
         subscription: user.ownedCompany.subscription, tokenBudgetMonthly: user.ownedCompany.tokenBudgetMonthly ?? 0,
         tokenUsedMonthly: user.ownedCompany.tokenUsedMonthly ?? 0, tokenBudgetResetAt: user.ownedCompany.tokenBudgetResetAt,
-        tokenAddOnPurchased: user.ownedCompany.tokenAddOnPurchased ?? 0, tokenAddOnsUsed: user.ownedCompany.tokenAddOnsUsed ?? 0,
+        tokenAddOnsPurchased: user.ownedCompany.tokenAddOnsPurchased ?? 0, tokenAddOnsUsed: user.ownedCompany.tokenAddOnsUsed ?? 0,
         subscriptionStartAt: user.ownedCompany.subscriptionStartAt, subscriptionEndAt: user.ownedCompany.subscriptionEndAt,
         createdAt: user.ownedCompany.createdAt, updatedAt: user.ownedCompany.updatedAt,
       } : null,

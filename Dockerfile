@@ -72,3 +72,4 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
 
 ENTRYPOINT ["tini", "--"]
 CMD ["./docker-entrypoint.sh"]
+// force rebuild
