@@ -241,7 +241,7 @@ export function checkAuthRateLimit(identifier: string, endpoint: string = "defau
   if (entry.count > limits.maxAttempts) {
     entry.blocked = true
     entry.resetAt = now + limits.blockDurationMs
-    return { allowed: false, retryAfterMs: AUTH_RATE_LIMITS.blockDurationMs }
+    return { allowed: false, retryAfterMs: limits.blockDurationMs }
   }
 
   return { allowed: true }
