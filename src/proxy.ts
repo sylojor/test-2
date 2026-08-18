@@ -176,11 +176,35 @@ const ADMIN_PAGE_PREFIXES = [
   "/en/admin",
 ]
 
+const PROTECTED_PAGE_PREFIXES = [
+  "/dashboard", "/company", "/employees", "/billing",
+  "/settings", "/conversations", "/work-orders", "/projects",
+  "/meetings", "/hr", "/tickets", "/api-keys",
+  "/access-tokens",
+]
+
+const PROTECTED_API_PREFIXES = [
+  "/api/employees", "/api/conversations", "/api/companies",
+  "/api/work-orders", "/api/projects", "/api/meetings",
+  "/api/hr", "/api/departments", "/api/payments/checkout",
+  "/api/invoices", "/api/token-budget", "/api/api-keys",
+  "/api/employee-requests", "/api/settings/",
+  "/api/decisions", "/api/support/tickets", "/api/chat",
+  "/api/coordinate",
+]
+
 const ADMIN_API_PREFIXES = [
   "/api/admin",
   "/api/blog/upload",
   "/api/upload/branding",
 ]
+
+function isProtectedPageRoute(pathname: string): boolean {
+  const allProtected = [...ADMIN_PAGE_PREFIXES, ...PROTECTED_PAGE_PREFIXES]
+  return allProtected.some(prefix =>
+    pathname === prefix || pathname.startsWith(prefix + "/")
+  )
+}
 
 function isAdminPageRoute(pathname: string): boolean {
   return ADMIN_PAGE_PREFIXES.some(prefix =>
@@ -200,10 +224,23 @@ const PUBLIC_ROUTES = [
   "/api/auth/register",
   "/api/auth/me",
   "/api/auth/logout",
+  "/api/auth/forgot-password",
+  "/api/auth/reset-password",
+  "/api/auth/verify-email",
+  "/api/auth/resend-verify",
+  "/api/auth/resend-code",
+  "/api/auth/google",
+  "/api/auth/google-client-id",
+  "/api/auth/verify",
   "/api",
   "/api/blog",
   "/api/blog/images",
   "/api/support",
+  "/api/plans",
+  "/api/payments/webhook",
+  "/api/payments/verify",
+  "/api/track-visitor",
+  "/api/cron",
 ]
 
 function isPublicRoute(pathname: string): boolean {
@@ -518,6 +555,19 @@ export function proxy(request: NextRequest) {
   }
 
   // ============================================
+  // STEP 5.5: Protected Page Routes — require auth token
+  // Redirects unauthenticated users to login
+  // ============================================
+  if (isProtectedPageRoute(pathname) && !isAdminPageRoute(pathname)) {
+    if (!hasAuthToken(request)) {
+      const locale = pathname.startsWith("/en") ? "en" : "ar"
+      const loginUrl = new URL(`/${locale}/login`, request.url)
+      loginUrl.searchParams.set("redirect", pathname)
+      return NextResponse.redirect(loginUrl)
+    }
+  }
+
+  // ============================================
   // STEP 6: Admin Page Routes — allow access
   // (Client-side handles auth/login display)
   // ============================================
@@ -527,7 +577,7 @@ export function proxy(request: NextRequest) {
     response.headers.set("X-Frame-Options", "DENY")
     response.headers.set("X-XSS-Protection", "1; mode=block")
     response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin")
-    response.headers.set("Content-Security-Policy", "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com; frame-src https://accounts.google.com; connect-src 'self' https://*.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:;")
+    response.headers.set("Content-Security-Policy", "default-src 'self'; script-src 'self' 'unsafe-inline' https://accounts.google.com; frame-src https://accounts.google.com; connect-src 'self' https://*.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:;")
     return response
   }
 
@@ -560,7 +610,19 @@ export function proxy(request: NextRequest) {
   }
 
   // ============================================
-  // STEP 8: Admin API Route Protection (lightweight gate)
+  // STEP 8: Protected API Route Protection
+  // ============================================
+  if (PROTECTED_API_PREFIXES.some(prefix => pathname.startsWith(prefix))) {
+    if (!hasAuthToken(request)) {
+      return new NextResponse(
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401, headers: { "Content-Type": "application/json" } }
+      )
+    }
+  }
+
+  // ============================================
+  // STEP 8.5: Admin API Route Protection (lightweight gate)
   // ============================================
   if (isAdminApiRoute(pathname)) {
     if (!hasAuthToken(request)) {
@@ -577,7 +639,7 @@ export function proxy(request: NextRequest) {
     response.headers.set("X-Frame-Options", "DENY")
     response.headers.set("X-XSS-Protection", "1; mode=block")
     response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin")
-    response.headers.set("Content-Security-Policy", "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com; frame-src https://accounts.google.com; connect-src 'self' https://*.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:;")
+    response.headers.set("Content-Security-Policy", "default-src 'self'; script-src 'self' 'unsafe-inline' https://accounts.google.com; frame-src https://accounts.google.com; connect-src 'self' https://*.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:;")
     return response
   }
 
@@ -607,7 +669,7 @@ export function proxy(request: NextRequest) {
   response.headers.set("X-Frame-Options", "DENY")
   response.headers.set("X-XSS-Protection", "1; mode=block")
   response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin")
-    response.headers.set("Content-Security-Policy", "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com; frame-src https://accounts.google.com; connect-src 'self' https://*.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:;")
+    response.headers.set("Content-Security-Policy", "default-src 'self'; script-src 'self' 'unsafe-inline' https://accounts.google.com; frame-src https://accounts.google.com; connect-src 'self' https://*.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:;")
 
   return response
 }
