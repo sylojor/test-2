@@ -1,15 +1,15 @@
 // ============================================// POST /api/support/tickets — Create new support ticket (public)// GET  /api/support/tickets?email=... — List user tickets by email (public)// ============================================
 
 import { NextResponse } from "next/server"
-import { db } from "@/lib/db"
+import { PrismaClient } from "@prisma/client"
 import { getClientIp, checkApiRateLimit } from "@/lib/auth"
 
-// Using shared db instance to avoid connection pool exhaustion
+const prisma = new PrismaClient()
 
 // Generate ticket number: SUP-2026-0001
 async function generateTicketNumber(): Promise<string> {
   const year = new Date().getFullYear()
-  const lastTicket = await db.supportTicket.findFirst({
+  const lastTicket = await prisma.supportTicket.findFirst({
     where: {
       ticketNumber: { startsWith: `SUP-${year}` },
     },
@@ -82,7 +82,7 @@ export async function POST(request: Request) {
     const ticketNumber = await generateTicketNumber()
     const userAgent = request.headers.get("user-agent") || null
 
-    const ticket = await db.supportTicket.create({
+    const ticket = await prisma.supportTicket.create({
       data: {
         ticketNumber,
         customerName: fName.trim(),
@@ -133,7 +133,7 @@ export async function GET(request: Request) {
       )
     }
 
-    const tickets = await db.supportTicket.findMany({
+    const tickets = await prisma.supportTicket.findMany({
       where: {
         customerEmail: email.trim().toLowerCase(),
       },

@@ -4,10 +4,10 @@
 // ============================================
 
 import { NextResponse } from "next/server"
-import { db } from "@/lib/db"
+import { PrismaClient } from "@prisma/client"
 import { getClientIp, checkApiRateLimit } from "@/lib/auth"
 
-// Using shared db instance
+const prisma = new PrismaClient()
 
 // ============================================
 // GET — عرض تفاصيل التذكرة + الرسائل
@@ -28,7 +28,7 @@ export async function GET(
       )
     }
 
-    const ticket = await db.supportTicket.findUnique({
+    const ticket = await prisma.supportTicket.findUnique({
       where: { id },
       include: {
         messages: {
@@ -100,7 +100,7 @@ export async function POST(
     }
 
     // Find ticket and verify email
-    const ticket = await db.supportTicket.findUnique({
+    const ticket = await prisma.supportTicket.findUnique({
       where: { id },
     })
 
@@ -126,8 +126,8 @@ export async function POST(
     }
 
     // Create message and update ticket status
-    const [message] = await db.$transaction([
-      db.ticketMessage.create({
+    const [message] = await prisma.$transaction([
+      prisma.ticketMessage.create({
         data: {
           ticketId: id,
           senderType: "customer",
@@ -135,7 +135,7 @@ export async function POST(
           content: content.trim(),
         },
       }),
-      db.supportTicket.update({
+      prisma.supportTicket.update({
         where: { id },
         data: {
           status: "OPEN",
