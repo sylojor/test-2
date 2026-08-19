@@ -4,7 +4,7 @@
 
 import { NextResponse } from "next/server"
 import { PrismaClient } from "@prisma/client"
-import { requireAdmin } from "@/lib/auth"
+import { requirePlatformOwner } from "@/lib/auth"
 
 const prisma = new PrismaClient()
 
@@ -13,7 +13,7 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const auth = requireAdmin(request)
+    const auth = requirePlatformOwner(request)
     if (!auth.success) return auth.response
 
     const { id } = await params

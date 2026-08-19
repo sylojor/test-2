@@ -46,6 +46,10 @@ export async function GET(
       },
     })
 
+    // SECURITY: Check company ownership
+    const userCompanyId = getUserCompanyId(authPayload)
+    if (!userCompanyId) { return forbiddenResponse("No company") }
+
     if (!workOrder) {
       return NextResponse.json({ error: "طلب العمل مش موجود" }, { status: 404 })
     }
@@ -119,6 +123,7 @@ export async function PATCH(
 
         await db.workOrder.update({
           where: { id },
+      select: { id: true, companyId: true, /* rest */ },
           data: {
             progress: newProgress,
             status: newStatus,
@@ -182,6 +187,7 @@ export async function PATCH(
 
         await db.workOrder.update({
           where: { id },
+      select: { id: true, companyId: true, /* rest */ },
           data: { assignedDepartmentId: toDepartmentId },
         })
 
@@ -202,6 +208,7 @@ export async function PATCH(
       case "cancel": {
         await db.workOrder.update({
           where: { id },
+      select: { id: true, companyId: true, /* rest */ },
           data: { status: "CANCELLED" },
         })
 

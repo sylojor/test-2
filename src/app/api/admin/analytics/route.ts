@@ -7,12 +7,12 @@
 
 import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/db"
-import { requireAdmin } from "@/lib/auth"
+import { requirePlatformOwner } from "@/lib/auth"
 
 // --- GET: Analytics data (admin only) ---
 export async function GET(request: NextRequest) {
   try {
-    const authResult = requireAdmin(request)
+    const authResult = requirePlatformOwner(request)
     if (!authResult.success) {
       return authResult.response as unknown as NextResponse
     }
@@ -158,7 +158,7 @@ export async function GET(request: NextRequest) {
 // --- POST: Add/Update head/footer tag (admin only) ---
 export async function POST(request: NextRequest) {
   try {
-    const authResult = requireAdmin(request)
+    const authResult = requirePlatformOwner(request)
     if (!authResult.success) {
       return authResult.response as unknown as NextResponse
     }
@@ -191,7 +191,7 @@ export async function POST(request: NextRequest) {
 // --- DELETE: Remove head/footer tag (admin only) ---
 export async function DELETE(request: NextRequest) {
   try {
-    const authResult = requireAdmin(request)
+    const authResult = requirePlatformOwner(request)
     if (!authResult.success) {
       return authResult.response as unknown as NextResponse
     }

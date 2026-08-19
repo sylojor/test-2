@@ -7,7 +7,7 @@
 
 import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/db"
-import { verifyAuth, unauthorizedResponse } from "@/lib/auth"
+import { verifyAuth, unauthorizedResponse, forbiddenResponse, getUserCompanyId } from "@/lib/auth"
 
 // --- جلب موظف واحد ---
 export async function GET(
@@ -61,6 +61,12 @@ export async function GET(
       )
     }
 
+    // SECURITY: Verify employee belongs to user's company (IDOR prevention)
+    const userCompanyId = getUserCompanyId(authPayload)
+    if (!userCompanyId || employee.companyId !== userCompanyId) {
+      return forbiddenResponse("Access denied")
+    }
+
     return NextResponse.json({ employee })
   } catch (error) {
     console.error("[GET_EMPLOYEE_ERROR]", error)
@@ -92,6 +98,12 @@ export async function PATCH(
         { error: "الموظف غير موجود" },
         { status: 404 },
       )
+    }
+
+    // SECURITY: Verify employee belongs to user's company (IDOR prevention)
+    const userCompanyId = getUserCompanyId(authPayload)
+    if (!userCompanyId || existing.companyId !== userCompanyId) {
+      return forbiddenResponse("Access denied")
     }
 
     const allowedFields = ["name", "role", "status", "approvalMode", "personality", "systemPrompt"]
@@ -153,6 +165,12 @@ export async function DELETE(
         { error: "الموظف غير موجود" },
         { status: 404 },
       )
+    }
+
+    // SECURITY: Verify employee belongs to user's company (IDOR prevention)
+    const userCompanyId = getUserCompanyId(authPayload)
+    if (!userCompanyId || existing.companyId !== userCompanyId) {
+      return forbiddenResponse("Access denied")
     }
 
     // Soft delete — ما بنحذفه فعليًا عشان الذاكرة تضل محفوظة

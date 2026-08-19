@@ -12,7 +12,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/db"
 import { sendToLLMWithTools } from "@/lib/llm-service"
 import { canConsumeTokens } from "@/lib/token-manager"
-import { verifyAuth, unauthorizedResponse, forbiddenResponse } from "@/lib/auth"
+import { verifyAuth, unauthorizedResponse, forbiddenResponse, getUserCompanyId } from "@/lib/auth"
 import type { LLMMessage } from "@/types"
 
 export async function GET(request: NextRequest) {
@@ -105,6 +105,12 @@ export async function POST(request: NextRequest) {
 
       if (!employee) {
         return NextResponse.json({ error: "الموظف غير موجود" }, { status: 404 })
+      }
+
+      // SECURITY: Verify employee belongs to user's company (IDOR prevention)
+      const userCompanyId = getUserCompanyId(authPayload)
+      if (!userCompanyId || employee.companyId !== userCompanyId) {
+        return forbiddenResponse("Access denied")
       }
 
       // فحص ميزانية التوكنات

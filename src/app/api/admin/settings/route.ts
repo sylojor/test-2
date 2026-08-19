@@ -14,14 +14,14 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getLLMStatus, testLLMConnection } from "@/lib/llm-service"
 import { db } from "@/lib/db"
-import { requireAdmin } from "@/lib/auth"
+import { requirePlatformOwner } from "@/lib/auth"
 import { existsSync } from "fs"
 
 // --- جلب كل إعدادات النظام (admin only) ---
 export async function GET(request: NextRequest) {
   try {
     // Auth check
-    const authResult = requireAdmin(request)
+    const authResult = requirePlatformOwner(request)
     if (!authResult.success) {
       return authResult.response as unknown as NextResponse
     }
@@ -132,7 +132,7 @@ export async function GET(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     // Auth check
-    const authResult = requireAdmin(request)
+    const authResult = requirePlatformOwner(request)
     if (!authResult.success) {
       return authResult.response as unknown as NextResponse
     }

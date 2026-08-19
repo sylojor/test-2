@@ -6,7 +6,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/db"
 import { isLLMConnected, sendToLLM } from "@/lib/llm-service"
-import { verifyAuth, unauthorizedResponse } from "@/lib/auth"
+import { verifyAuth, unauthorizedResponse, forbiddenResponse, getUserCompanyId } from "@/lib/auth"
 import { buildPipeline, createPipelineInDB, runFullPipeline } from "@/lib/pipeline-executor"
 
 // --- كلمات مفتاحية لربط الطلبات بالأقسام ---
@@ -191,6 +191,9 @@ export async function GET(request: NextRequest) {
       return unauthorizedResponse()
     }
 
+    const userCompanyId = getUserCompanyId(authPayload)
+    if (!userCompanyId) { return forbiddenResponse("No company") }
+
     const { searchParams } = new URL(request.url)
     const companyId = searchParams.get("companyId")
     const status = searchParams.get("status")
@@ -240,6 +243,9 @@ export async function POST(request: NextRequest) {
     if (!authPayload) {
       return unauthorizedResponse()
     }
+
+    const userCompanyId = getUserCompanyId(authPayload)
+    if (!userCompanyId) { return forbiddenResponse("No company") }
 
     const body = await request.json()
     const { companyId, createdById, createdByName, title, description, priority, deadline } = body

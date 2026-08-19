@@ -11,7 +11,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/db"
 import { executeAgentTask } from "@/lib/agent-executor"
-import { verifyAuth, unauthorizedResponse } from "@/lib/auth"
+import { verifyAuth, unauthorizedResponse, forbiddenResponse, getUserCompanyId } from "@/lib/auth"
 import type { LLMMessage, RequestType } from "@/types"
 
 export async function GET(
@@ -27,17 +27,29 @@ export async function GET(
 
     const { id } = await params
 
-    // Security: Verify conversation belongs to user's company
-    const userCompanyId = authPayload.companyId || authPayload.ownedCompany?.id
-    if (!userCompanyId) {
-      return NextResponse.json({ error: "No company association" }, { status: 403 })
-    }
+    const userCompanyId = getUserCompanyId(authPayload)
+    if (!userCompanyId) { return forbiddenResponse("No company") }
 
-    const conversation = await db.conversation.findUnique({
-      where: { id },
+    // Security: Verify conversation belongs to user's company through participants
+    const participant = await db.conversationParticipant.findFirst({
+      where: {
+        conversationId: id,
+        participantType: "USER",
+        participantId: authPayload.userId,
+      },
     })
-    if (!conversation) {
-      return NextResponse.json({ error: "Conversation not found" }, { status: 404 })
+    if (!participant) {
+      // Also check if any employee participant belongs to user's company
+      const empParticipant = await db.conversationParticipant.findFirst({
+        where: {
+          conversationId: id,
+          employee: { companyId: userCompanyId },
+        },
+        include: { employee: { select: { companyId: true } } },
+      })
+      if (!empParticipant) {
+        return forbiddenResponse("Access denied")
+      }
     }
 
     const messages = await db.message.findMany({
@@ -65,7 +77,11 @@ export async function POST(
 
     const { id: conversationId } = await params
     const body = await request.json()
-    const { senderType, senderId, senderName, content, companyId } = body
+    const { senderType, senderId, senderName, content } = body
+
+    // SECURITY: Verify conversation access
+    const userCompanyId = getUserCompanyId(authPayload)
+    if (!userCompanyId) { return forbiddenResponse("No company") }
 
     if (!content || content.trim().length === 0) {
       return NextResponse.json({ error: "محتوى الرسالة مطلوب" }, { status: 400 })
@@ -128,7 +144,7 @@ export async function POST(
             // المشترك ما يشوف هاد — يشوف النتيجة النهائية بس
             const agentResult = await executeAgentTask({
               employeeId: employee.id,
-              companyId: companyId || employee.companyId,
+              companyId: employee.companyId,
               taskType: "CHAT",
               taskTitle: `محادثة: ${content.slice(0, 50)}`,
               taskInput: content,
@@ -192,7 +208,7 @@ export async function POST(
 
             const agentResult = await executeAgentTask({
               employeeId: employee.id,
-              companyId: companyId || employee.companyId,
+              companyId: employee.companyId,
               taskType: "CHAT",
               taskTitle: `محادثة موظفين: ${content.slice(0, 50)}`,
               taskInput: content,

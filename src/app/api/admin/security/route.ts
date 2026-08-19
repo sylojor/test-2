@@ -7,11 +7,11 @@
 
 import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/db"
-import { requireAdmin } from "@/lib/auth"
+import { requirePlatformOwner } from "@/lib/auth"
 
 export async function GET(request: NextRequest) {
   // --- Auth check ---
-  const auth = requireAdmin(request)
+  const auth = requirePlatformOwner(request)
   if (!auth.success) return new NextResponse(auth.response.body, { status: auth.response.status, headers: auth.response.headers })
 
   try {
@@ -72,7 +72,7 @@ export async function GET(request: NextRequest) {
 
 // --- POST: Block an IP manually ---
 export async function POST(request: NextRequest) {
-  const auth = requireAdmin(request)
+  const auth = requirePlatformOwner(request)
   if (!auth.success) return new NextResponse(auth.response.body, { status: auth.response.status, headers: auth.response.headers })
 
   try {
@@ -152,7 +152,7 @@ export async function POST(request: NextRequest) {
 
 // --- DELETE: Unblock an IP ---
 export async function DELETE(request: NextRequest) {
-  const auth = requireAdmin(request)
+  const auth = requirePlatformOwner(request)
   if (!auth.success) return new NextResponse(auth.response.body, { status: auth.response.status, headers: auth.response.headers })
 
   try {

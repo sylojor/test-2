@@ -8,14 +8,14 @@
 
 import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/db"
-import { requireAdmin } from "@/lib/auth"
+import { requirePlatformOwner } from "@/lib/auth"
 
 const dbAny = db as any
 
 // --- GET: Content by section (admin only) ---
 export async function GET(request: NextRequest) {
   try {
-    const authResult = requireAdmin(request)
+    const authResult = requirePlatformOwner(request)
     if (!authResult.success) {
       return authResult.response as unknown as NextResponse
     }
@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
 // --- POST: Bulk save content items (admin only) ---
 export async function POST(request: NextRequest) {
   try {
-    const authResult = requireAdmin(request)
+    const authResult = requirePlatformOwner(request)
     if (!authResult.success) {
       return authResult.response as unknown as NextResponse
     }
@@ -105,7 +105,7 @@ export async function POST(request: NextRequest) {
 // --- PUT: Upsert single content item (admin only) ---
 export async function PUT(request: NextRequest) {
   try {
-    const authResult = requireAdmin(request)
+    const authResult = requirePlatformOwner(request)
     if (!authResult.success) {
       return authResult.response as unknown as NextResponse
     }
@@ -147,7 +147,7 @@ export async function PUT(request: NextRequest) {
 // --- DELETE: Remove a content item (admin only) ---
 export async function DELETE(request: NextRequest) {
   try {
-    const authResult = requireAdmin(request)
+    const authResult = requirePlatformOwner(request)
     if (!authResult.success) {
       return authResult.response as unknown as NextResponse
     }

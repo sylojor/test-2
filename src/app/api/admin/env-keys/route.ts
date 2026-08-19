@@ -12,7 +12,7 @@
 // ============================================
 
 import { NextRequest, NextResponse } from "next/server"
-import { requireAdmin } from "@/lib/auth"
+import { requirePlatformOwner } from "@/lib/auth"
 import { readFileSync, writeFileSync, existsSync } from "fs"
 import { resolve } from "path"
 
@@ -215,7 +215,7 @@ function writeEnvFile(path: string, envData: Record<string, string>) {
 export async function GET(request: NextRequest) {
   try {
     // Auth check
-    const authResult = requireAdmin(request)
+    const authResult = requirePlatformOwner(request)
     if (!authResult.success) {
       return authResult.response as unknown as NextResponse
     }
@@ -263,7 +263,7 @@ export async function GET(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     // Auth check
-    const authResult = requireAdmin(request)
+    const authResult = requirePlatformOwner(request)
     if (!authResult.success) {
       return authResult.response as unknown as NextResponse
     }
@@ -329,7 +329,7 @@ export async function PUT(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     // Auth check
-    const authResult = requireAdmin(request)
+    const authResult = requirePlatformOwner(request)
     if (!authResult.success) {
       return authResult.response as unknown as NextResponse
     }

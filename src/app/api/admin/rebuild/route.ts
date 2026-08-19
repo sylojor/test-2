@@ -16,7 +16,7 @@
 // ============================================
 
 import { NextRequest, NextResponse } from "next/server"
-import { requireAdmin } from "@/lib/auth"
+import { requirePlatformOwner } from "@/lib/auth"
 import { existsSync, writeFileSync, readFileSync, unlinkSync, mkdirSync } from "fs"
 import { db } from "@/lib/db"
 
@@ -34,7 +34,7 @@ const REBUILD_STATUS_FILE = `${DATA_DIR}/rebuild-status.json`
 // ============================================
 export async function GET(request: NextRequest) {
   try {
-    const authResult = requireAdmin(request)
+    const authResult = requirePlatformOwner(request)
     if (!authResult.success) {
       return authResult.response as unknown as NextResponse
     }
@@ -131,7 +131,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // --- Auth check ---
-    const authResult = requireAdmin(request)
+    const authResult = requirePlatformOwner(request)
     if (!authResult.success) {
       return authResult.response as unknown as NextResponse
     }

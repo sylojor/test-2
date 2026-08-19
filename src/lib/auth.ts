@@ -194,18 +194,34 @@ export function requireAdmin(request: Request): AdminAuthResult {
 
 export function requirePlatformOwner(request: Request): AdminAuthResult {
   const payload = verifyAuth(request)
-  
+
   if (!payload) {
     return {
       success: false,
-      response: unauthorizedResponse("غير مصرح — سجّل دخولك"),
+      response: unauthorizedResponse("Authentication required"),
     }
   }
 
+  // Must have OWNER role
   if (payload.role !== "OWNER") {
     return {
       success: false,
-      response: forbiddenResponse("ليس لديك صلاحية — هذا الإجراء مخصص لصاحب المنصة فقط"),
+      response: forbiddenResponse("Access denied — platform admin only"),
+    }
+  }
+
+  // SECURITY: Verify against platform admin email whitelist
+  const adminEmails = (process.env.PLATFORM_ADMIN_EMAILS || "")
+    .split(",")
+    .map((e: string) => e.trim().toLowerCase())
+    .filter((e: string) => e.length > 0)
+
+  if (adminEmails.length > 0) {
+    if (!adminEmails.includes(payload.email.toLowerCase())) {
+      return {
+      success: false,
+      response: forbiddenResponse("Access denied — not a platform admin"),
+    }
     }
   }
 

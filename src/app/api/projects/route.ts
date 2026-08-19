@@ -6,7 +6,7 @@
 
 import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/db"
-import { verifyAuth, unauthorizedResponse } from "@/lib/auth"
+import { verifyAuth, unauthorizedResponse, forbiddenResponse, getUserCompanyId } from "@/lib/auth"
 
 export async function GET(request: NextRequest) {
   try {
@@ -15,6 +15,9 @@ export async function GET(request: NextRequest) {
     if (!authPayload) {
       return unauthorizedResponse()
     }
+
+    const userCompanyId = getUserCompanyId(authPayload)
+    if (!userCompanyId) { return forbiddenResponse("No company") }
 
     const { searchParams } = new URL(request.url)
     const companyId = searchParams.get("companyId")
@@ -55,6 +58,9 @@ export async function POST(request: NextRequest) {
     if (!authPayload) {
       return unauthorizedResponse()
     }
+
+    const userCompanyId = getUserCompanyId(authPayload)
+    if (!userCompanyId) { return forbiddenResponse("No company") }
 
     const body = await request.json()
     const { name, description, departmentId, priority, deadline, companyId } = body

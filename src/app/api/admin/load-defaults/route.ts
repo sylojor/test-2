@@ -7,7 +7,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/db"
 import { translations } from "@/lib/i18n"
 import type { Language } from "@/lib/i18n"
-import { requireAdmin } from "@/lib/auth"
+import { requirePlatformOwner } from "@/lib/auth"
 
 function getValue(lang: Language, path: string): string {
   return translations[lang]?.[path] || ""
@@ -82,7 +82,7 @@ const SECTION_MAP: Record<string, FieldDef[]> = {
 
 export async function POST(request: NextRequest) {
   try {
-    const authResult = requireAdmin(request)
+    const authResult = requirePlatformOwner(request)
     if (!authResult.success) {
       return authResult.response as unknown as NextResponse
     }

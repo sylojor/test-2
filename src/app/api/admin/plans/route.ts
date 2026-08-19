@@ -10,12 +10,12 @@ import { SubscriptionPlan } from "@/types"
 import { NextRequest, NextResponse } from "next/server"
 import { revalidatePath } from "next/cache"
 import { db } from "@/lib/db"
-import { requireAdmin } from "@/lib/auth"
+import { requirePlatformOwner } from "@/lib/auth"
 
 // --- جلب كل الخطط ---
 export async function GET(request: NextRequest) {
   try {
-    const authResult = requireAdmin(request)
+    const authResult = requirePlatformOwner(request)
     if (!authResult.success) {
       return authResult.response as unknown as NextResponse
     }
@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
 // --- إضافة خطة جديدة ---
 export async function POST(request: NextRequest) {
   try {
-    const authResult = requireAdmin(request)
+    const authResult = requirePlatformOwner(request)
     if (!authResult.success) {
       return authResult.response as unknown as NextResponse
     }
@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
 // --- تحديث خطة ---
 export async function PATCH(request: NextRequest) {
   try {
-    const authResult = requireAdmin(request)
+    const authResult = requirePlatformOwner(request)
     if (!authResult.success) {
       return authResult.response as unknown as NextResponse
     }
@@ -188,7 +188,7 @@ export async function PATCH(request: NextRequest) {
 // --- حذف خطة ---
 export async function DELETE(request: NextRequest) {
   try {
-    const authResult = requireAdmin(request)
+    const authResult = requirePlatformOwner(request)
     if (!authResult.success) {
       return authResult.response as unknown as NextResponse
     }
