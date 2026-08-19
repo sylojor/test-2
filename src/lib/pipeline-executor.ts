@@ -516,7 +516,7 @@ export async function executePipelineStep(
     const agentResult = await executeAgentTask({
       employeeId,
       companyId,
-      taskType,
+      taskType: taskType as RequestType,
       taskTitle,
       taskInput: taskDescription,
       systemPrompt,

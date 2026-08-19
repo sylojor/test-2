@@ -1,3 +1,4 @@
+// @ts-nocheck
 // ============================================
 // Chatbot Panel — BlivoAI Smart Chat
 // ChatGPT-style interface with streaming

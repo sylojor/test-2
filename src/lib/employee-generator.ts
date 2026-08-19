@@ -395,6 +395,18 @@ export function getApprovalModeDisplay(mode: string, language?: string): string 
   return (isAr ? mapAr : mapEn)[mode] ?? mode
 }
 
+export function getEmployeeStatusColor(status: string): string {
+  const map: Record<string, string> = {
+    SETUP: "bg-yellow-100 text-yellow-800",
+    ACTIVE: "bg-green-100 text-green-800",
+    PAUSED: "bg-gray-100 text-gray-800",
+    AWAITING_APPROVAL: "bg-orange-100 text-orange-800",
+    REPLACED: "bg-blue-100 text-blue-800",
+    DELETED: "bg-red-100 text-red-800",
+  }
+  return map[status] ?? "bg-gray-100 text-gray-800"
+}
+
 export function getProjectStatusDisplay(status: string): string {
   const map: Record<string, string> = {
     PLANNING: "تخطيط",

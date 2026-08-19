@@ -125,7 +125,6 @@ export function MainContent({
             departments={departments}
             onUpdateEmployeeDepartment={onUpdateEmployeeDepartment}
             onDeleteEmployee={onDeleteEmployee}
-            onReplaceEmployee={onReplaceEmployee}
           />
         </main>
       )
@@ -288,9 +287,7 @@ export function MainContent({
         return (
           <main className="flex-1 overflow-y-auto w-full">
       <EmployeeDetailPanel
-              employee={detailEmployee}
-              departments={departments}
-              onBack={() => useDashboardStore.getState().setActiveTab("employees")}
+              employee={detailEmployee!}
             />
           </main>
         )

@@ -2653,13 +2653,13 @@ export function getLanguage(): Language {
   return currentLanguage
 }
 
-export function t(key: string, lang?: Language): string {
+export function t(key: string, lang?: string): string {
   const language = lang || currentLanguage
   return translations[language]?.[key] ?? translations.ar[key] ?? key
 }
 
 // دالة مساعدة: ترجمة مع استبدال متغيرات
-export function tf(key: string, vars: Record<string, string | number>, lang?: Language): string {
+export function tf(key: string, vars: Record<string, string | number>, lang?: string): string {
   let text = t(key, lang)
   for (const [k, v] of Object.entries(vars)) {
     text = text.replace(new RegExp(`\\{${k}\\}`, "g"), String(v))
