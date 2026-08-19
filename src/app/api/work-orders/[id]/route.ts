@@ -46,10 +46,6 @@ export async function GET(
       },
     })
 
-    // SECURITY: Check company ownership
-    const userCompanyId = getUserCompanyId(authPayload)
-    if (!userCompanyId) { return forbiddenResponse("No company") }
-
     if (!workOrder) {
       return NextResponse.json({ error: "طلب العمل مش موجود" }, { status: 404 })
     }
