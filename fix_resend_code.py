@@ -1,4 +1,8 @@
-// ============================================
+#!/usr/bin/env python3
+"""Fix resend-code route to use Resend (email-service.ts) instead of SendGrid"""
+filepath = '/home/ubuntu/new-blivo/src/app/api/auth/resend-code/route.ts'
+
+new_content = '''// ============================================
 // API: Resend Verification Code
 // POST /api/auth/resend-code
 // { email } → sends a new 6-digit code via Resend
@@ -62,3 +66,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Failed to send code" }, { status: 500 })
   }
 }
+'''
+
+with open(filepath, 'w', encoding='utf-8') as f:
+    f.write(new_content)
+print('Fixed resend-code/route.ts: now uses Resend via email-service.ts')
