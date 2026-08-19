@@ -23,8 +23,6 @@ export async function GET(
 
     const { id } = await params
     
-    // Security: Verify employee belongs to user's company
-    const userCompanyId = authPayload.companyId || authPayload.ownedCompany?.id
     const employee = await db.employee.findUnique({
       where: { id },
       include: {
