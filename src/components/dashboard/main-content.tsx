@@ -7,6 +7,7 @@
 
 "use client"
 
+import type { IEmployee } from "@/types"
 import { useDashboardStore } from "@/stores/dashboard-store"
 import { OverviewPanel } from "@/components/dashboard/overview-panel"
 import { MonitorPanel } from "@/components/dashboard/monitor-panel"
@@ -287,7 +288,7 @@ export function MainContent({
         return (
           <main className="flex-1 overflow-y-auto w-full">
       <EmployeeDetailPanel
-              employee={detailEmployee!}
+              employee={detailEmployee} as IEmployee
             />
           </main>
         )

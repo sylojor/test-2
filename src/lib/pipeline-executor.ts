@@ -516,7 +516,7 @@ export async function executePipelineStep(
     const agentResult = await executeAgentTask({
       employeeId,
       companyId,
-      taskType: taskType as RequestType,
+      taskType: taskType,
       taskTitle,
       taskInput: taskDescription,
       systemPrompt,
@@ -649,7 +649,7 @@ export async function advancePipeline(
 // تحديد نوع المهمة تلقائياً
 // ============================================
 
-function determineTaskType(title: string, description: string): string {
+function determineTaskType(title: string, description: string): RequestType {
   const text = `${title} ${description}`.toLowerCase()
 
   if (text.includes("كود") || text.includes("برمج") || text.includes("تطوير") ||
